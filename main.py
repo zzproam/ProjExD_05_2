@@ -19,9 +19,12 @@ class HealthBar():             #ヘルスバークラス
 
         self.font = pg.font.Font(None, 32)
         self.label = self.font.render("HP",True,(255,255,255))
-        self.frame = Rect(self.x + 2 + self.label.get_width(),self.y + self.width,self.label.get_height())   #ヘルスバーのまわり
-        self.bar = Rect(self.x + 4 + self.label.get_width(),self.y + 2,self.width -4, self.label.get_height()-4)  #ヘルスバー自体
+        self.frame = Rect(self.x + 2 + self.label.get_width(),self.y, self.width,self.label.get_height())   #ヘルスバーのまわり
+        self.bar = Rect(self.x + 4 + self.label.get_width(),self.y + 2,self.width -4, self.label.get_height() -4)  #ヘルスバー自体
         self.value = Rect(self.x + 4 + self.label.get_width(),self.y + 2, self.width -4, self.label.get_height() -4)  #ヘルスバーの減ったところ
+
+    def update(self):
+        self.value.width = self.hp*self.mark
 
     def draw(self,screen):
         pg.draw.rect(screen,(255,255,255),self.frame)
