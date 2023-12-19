@@ -14,6 +14,14 @@ def main():
 
     ship1 = Ship(1, (100, 200))
     ship2 = Ship(7, (1000, 500))
+    ship1_controls = {
+        pg.K_LEFT: (-1, 0),
+        pg.K_RIGHT: (1, 0),
+    }
+    ship2_controls = {
+        pg.K_a: (-1, 0),
+        pg.K_d: (1, 0),
+    }
 
     tmr = 0
     clock = pg.time.Clock()
@@ -28,8 +36,8 @@ def main():
         # 背景をブリット
         screen.blit(bg_img, [0, 0])
 
-        ship1.update(key_lst, screen)
-        ship2.update(key_lst, screen)
+        ship1.update(key_lst, ship1_controls, screen)
+        ship2.update(key_lst, ship2_controls, screen)
 
         pg.display.update()
         tmr += 1
