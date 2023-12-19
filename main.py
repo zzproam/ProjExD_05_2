@@ -3,9 +3,10 @@ import sys
 from screen import *
 from ship import *
 import os
+from Bullet import *
+import random
 WIDTH, HEIGHT = 1400, 600
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
-
 
 def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -22,7 +23,8 @@ def main():
         pg.K_a: (-1, 0),
         pg.K_d: (1, 0),
     }
-
+    bullets = pg.sprite.Group()
+    
     tmr = 0
     clock = pg.time.Clock()
 
@@ -32,17 +34,21 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
-
+            if event.type == pg.KEYDOWN and event.key == pg.K_RIGHTBRACKET:
+                bullets.add(Bullet1(ship1))
+            if event.type == pg.KEYDOWN and event.key == pg.K_g:
+                bullets.add(Bullet2(ship2))
         # 背景をブリット
         screen.blit(bg_img, [0, 0])
 
         ship1.update(key_lst, ship1_controls, screen)
         ship2.update(key_lst, ship2_controls, screen)
+        bullets.update()
+        bullets.draw(screen)
 
         pg.display.update()
         tmr += 1
         clock.tick(50)
-
 
 if __name__ == "__main__":
 
