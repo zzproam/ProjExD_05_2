@@ -4,13 +4,13 @@ from screen import *
 from ship import *
 import os
 from Bullet import *
+import time
 WIDTH, HEIGHT = 1400, 600
 pg.display.set_caption('BattleShip')
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 class Lightning1(pg.sprite.Sprite):
     imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
-
     def __init__(self, ship: Ship):
         super().__init__()
         self.images = [pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)) for img in Lightning1.imgs]
@@ -26,13 +26,13 @@ class Lightning1(pg.sprite.Sprite):
         self.rect.centerx = ship.rect.centerx
         self.rect.top = ship.rect.bottom  # Align the top of the lightning with the bottom of the ship
         self.animation_done = False
+        
     def update(self):
         self.current_frame = (self.current_frame + 1) % len(self.images)
         self.image = self.images[self.current_frame]
-
         if self.current_frame == 0:
-                self.animation_done = True
-
+            self.animation_done = True
+        
 class Lightning2(pg.sprite.Sprite):
     imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
 
@@ -47,18 +47,34 @@ class Lightning2(pg.sprite.Sprite):
         self.current_frame = 0
         self.image = self.images[self.current_frame]
         self.rect = self.image.get_rect()
-        self.speed = -10
         # Position the lightning at the bottom of the ship
         self.rect.centerx = ship.rect.centerx
         self.rect.bottom = ship.rect.top  # Align the top of the lightning with the bottom of the ship
         self.animation_done = False
-
+        self.hit = False
     def update(self):
         self.current_frame = (self.current_frame + 1) % len(self.images)
         self.image = self.images[self.current_frame]
-        self.rect.y += self.speed
         if self.current_frame == 0:
             self.animation_done = True
+
+class Explosion(pg.sprite.Sprite):
+    def __init__(self, position):
+        super().__init__()
+        self.images = [pg.image.load(f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
+        self.current_frame = 0
+        self.image = self.images[self.current_frame]  # Set the initial image
+        self.rect = self.image.get_rect(center=position)
+        self.animation_done = False
+
+    def update(self):
+        # Update the frame
+        self.current_frame += 1
+        if self.current_frame < len(self.images):
+            self.image = self.images[self.current_frame]
+        else:
+            self.animation_done = True  # End the animation once all frames have been shown
+
 
 def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -78,6 +94,7 @@ def main():
     }
     bullets = pg.sprite.Group()
     lightnings = pg.sprite.Group()
+    explosions = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
 
@@ -96,6 +113,17 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_h:
                 lightnings.add(Lightning2(ship2))
         # 背景をブリット
+        for lightning in lightnings:
+            if ship1.rect.colliderect(lightning.rect):
+                explosions.add(Explosion(ship1.rect.center))  # Create an explosion at ship2's location
+                ex = tmr
+                if ex == tmr + 2:
+                    lightnings.remove(lightning)
+            if ship2.rect.colliderect(lightning.rect):
+                explosions.add(Explosion(ship2.rect.center))  # Create an explosion at ship2's location
+                ex = tmr
+                if ex == tmr + 2:
+                    lightnings.remove(lightning)
         screen.blit(bg_img, [0, 0])
 
         ship1.update(key_lst, ship1_controls, screen)
@@ -104,9 +132,15 @@ def main():
         bullets.draw(screen)
         lightnings.update()
         lightnings.draw(screen)
+        explosions.update()
+        
         for lightning in list(lightnings):
             if lightning.animation_done:
                 lightnings.remove(lightning)
+        explosions.draw(screen)
+        for explosion in list(explosions):
+            if explosion.animation_done:
+                explosions.remove(explosion)
         pg.display.update()
         tmr += 1
         clock.tick(50)
