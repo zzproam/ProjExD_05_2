@@ -334,7 +334,7 @@ def main():
     ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
     ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
     ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
-                 ship1_frame_count_move, ship_num=1, new_size=(300, 300))
+                 ship1_frame_count_move, ship_num=1, new_size=(250, 250))
 
     ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
     ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
