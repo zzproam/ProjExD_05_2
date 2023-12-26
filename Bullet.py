@@ -1,8 +1,3 @@
-import pygame as pg
-import sys
-import os
-from ship import *
-import math
 class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
     def __init__(self,ship: Ship):
         super().__init__()
