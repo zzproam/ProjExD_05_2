@@ -361,7 +361,7 @@ def main():
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    hp_bar1 = HealthBar(100,100,100,12)
+    hp_bar1 = HealthBar(10,10,100,12)
     hp_bar2 = HealthBar(1200,500,100,12)
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
@@ -453,7 +453,6 @@ def main():
         for y in range(tiles_y):
             for x in range(tiles_x):
                 screen.blit(bg_img, (x * bg_tile_width, y * bg_tile_height))
-
         if bg_x < -bg_img.get_width():
             bg_x = bg_img.get_width()
         if bg_x_flipped < -bg_img.get_width():
@@ -526,3 +525,4 @@ if __name__ == "__main__":
     main()
     pg.quit()
     sys.exit()
+    
