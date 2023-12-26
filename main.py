@@ -401,7 +401,6 @@ class Explosion2(pg.sprite.Sprite):
         else:
             self.animation_done = True  # End the animation once all frames have been shown
 
-
 def main():
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
