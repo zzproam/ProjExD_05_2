@@ -5,7 +5,7 @@ from ship import *
 import os
 import random
 from pygame.locals import *
-WIDTH, HEIGHT = 1400, 600
+WIDTH, HEIGHT = 1600, 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 idle_image_paths = {
@@ -361,7 +361,7 @@ def main():
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    hp_bar1 = HealthBar(10,10,100,12)
+    hp_bar1 = HealthBar(100,100,100,12)
     hp_bar2 = HealthBar(1200,500,100,12)
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
