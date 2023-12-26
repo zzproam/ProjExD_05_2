@@ -6,7 +6,7 @@ import os
 WIDTH, HEIGHT = 1400, 600
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 from pygame.locals import *
-
+ 
 
 class HealthBar():             #ヘルスバークラス
     def __init__(self,x,y,width,max):
@@ -23,24 +23,42 @@ class HealthBar():             #ヘルスバークラス
         self.bar = Rect(self.x + 4 + self.label.get_width(),self.y + 2,self.width -4, self.label.get_height() -4)  #ヘルスバー自体
         self.value = Rect(self.x + 4 + self.label.get_width(),self.y + 2, self.width -4, self.label.get_height() -4)  #ヘルスバーの減ったところ
 
-    def update(self):
-        self.value.width = self.hp*self.mark
+        self.effect_bar = Rect(self.x + 4 + self.label.get_width(), self.y + 2, self.width - 4, self.label.get_height() -4)
+        self.effect_color = (0,255,255)
 
+    def update(self):
+        if self.hp >= self.max:
+            self.hp = self.max
+
+        if self.effect_bar.width > self.mark * self.hp:
+            self.value.width = self.mark * self.hp
+            if self.effect_bar.width >= self.value.width:
+                self.effect_bar.width = self.mark * self.hp
+
+        elif self.value.width < self.mark * self.hp:
+            self.effect_bar.width = self.mark * self.hp
+            self.value.inflate_ip(1,0)
+
+        if self.effect_bar.width <= self.bar.width /6:
+            self.effect_color - (255,255,0)
+        elif self.effect_color <= self.bat.width /2:
+            self.effect_color = (255,255,0)
+        else:
+            self.effct_color = (0,255,0)
+
+    
     def draw(self,screen):
         pg.draw.rect(screen,(255,255,255),self.frame)
         pg.draw.rect(screen,(0,0,0),self.bar)
-        pg.draw.rect(screen, (0,255,0),self.value)
+        pg.draw.rect(screen,self.effect_color,self.effect_bar)
+        pg.draw.rect(screen, (0,0,255),self.value)
         screen.blit(self.label,(self.x,self.y))
-
-    
 
 
 def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
-    # クロックの作成
     hp_bar = HealthBar(10,10,100,300)
-
     ship1 = Ship(1, (100, 200))
     ship2 = Ship(7, (1000, 500))
     ship1_controls = {
