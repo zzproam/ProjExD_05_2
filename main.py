@@ -582,9 +582,6 @@ def main():
                 if ex == tmr + 2:
                     lightnings.remove(lightning)
         screen.blit(bg_img, [0, 0])
-
-        ship1.update(key_lst, ship1_controls, screen)
-        ship2.update(key_lst, ship2_controls, screen)
          # 背景をブリット
 
         for y in range(tiles_y):
