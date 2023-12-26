@@ -3,7 +3,7 @@ import pygame as pg
 import random
 import os
 #画面サイズ
-WIDTH, HEIGHT = 1400, 600
+WIDTH, HEIGHT = 1600, 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 class Fuel(pg.sprite.Sprite):
