@@ -407,7 +407,7 @@ def main():
             if event.type == pg.QUIT:
                 return
 
-         # 燃料と船が接触したかの判定
+         #燃料と船が接触したかの判定
             for fuel in fuels:
                 if ship1.rect.colliderect(fuel.rect):
                     score.score += 20
