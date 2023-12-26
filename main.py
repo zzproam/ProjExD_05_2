@@ -5,7 +5,7 @@ from ship import *
 import os
 import random
 from pygame.locals import *
-WIDTH, HEIGHT = 1600, 900
+WIDTH, HEIGHT = 1400, 600
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 idle_image_paths = {
@@ -324,7 +324,7 @@ class HealthBar():             #ヘルスバークラス
         self.bar = Rect(self.x + 4 + self.label.get_width(),self.y + 2,self.width -4, self.label.get_height() -4)  #ヘルスバー自体
         self.value = Rect(self.x + 4 + self.label.get_width(),self.y + 2, self.width -4, self.label.get_height() -4)  #ヘルスバーの減ったところ
 
-        self.effect_bar = Rect(self.x + 4 + self.label.get_width(), self.y + 2, self.width - 4, self.label.get_height() -4)
+        self.effect_bar = Rect(self.x + 4+self.label.get_width(),self.y+2,self.width -4, self.label.get_height()-4)
         self.effect_color = (0,255,255)
 
     def update(self):
@@ -335,7 +335,6 @@ class HealthBar():             #ヘルスバークラス
             self.value.width = self.mark * self.hp
             if self.effect_bar.width >= self.value.width:
                 self.effect_bar.width = self.mark * self.hp
-
         elif self.value.width < self.mark * self.hp:
             self.effect_bar.width = self.mark * self.hp
             self.value.inflate_ip(1,0)
@@ -362,9 +361,9 @@ def main():
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-
+    hp_bar1 = HealthBar(10,10,100,12)
+    hp_bar2 = HealthBar(1200,500,100,12)
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
-    hp_bar = HealthBar(10,10,100,300)
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
     bg_img_flipped = pg.transform.flip(bg_img, True, False)
     bg_x = 0
@@ -461,7 +460,6 @@ def main():
             bg_x_flipped = bg_img.get_width()
         screen.blit(bg_img, (bg_x, 0))
         screen.blit(bg_img_flipped, (bg_x_flipped, 0))
-        hp_bar.draw(screen)
 
         if key_lst[pg.K_LSHIFT]:
             direction = (-1, 0) if key_lst[pg.K_a] else (1, 0)
@@ -514,7 +512,8 @@ def main():
                 ship2_shield.update()
                 screen.blit(ship2_shield.image, ship2_shield.rect)
         explosions.draw(screen)
-
+        hp_bar1.draw(screen)
+        hp_bar2.draw(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
