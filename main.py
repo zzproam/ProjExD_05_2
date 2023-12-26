@@ -2,6 +2,8 @@ import pygame as pg
 import sys
 from screen import *
 from ship import *
+from fuel import *
+from score import *
 import os
 import random
 WIDTH, HEIGHT = 1600, 900
@@ -310,11 +312,14 @@ class AnimatedShield(pg.sprite.Sprite):
 
 
 def main():
-
     # Walk.pngを読み込み
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
+
+    score = Score()
+    score2 = Scores()
+    fuels = pg.sprite.Group()
 
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
@@ -401,7 +406,18 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
-         # 背景をブリット
+
+         # 燃料と船が接触したかの判定
+            for fuel in fuels:
+                if ship1.rect.colliderect(fuel.rect):
+                    score.score += 20
+                    fuel.kill()
+                if ship2.rect.colliderect(fuel.rect):
+                    score2.scores += 20
+                    fuel.kill()
+        # 300フレームに1回，燃料を出現させる
+        if tmr % 300 == 0:
+            fuels.add(Fuel())
 
         for y in range(tiles_y):
             for x in range(tiles_x):
@@ -465,6 +481,9 @@ def main():
                 ship2_shield.update()
                 screen.blit(ship2_shield.image, ship2_shield.rect)
         explosions.draw(screen)
+        score.update(screen)
+        score2.update(screen)
+        fuels.draw(screen)
 
         pg.display.update()
         tmr += 1
