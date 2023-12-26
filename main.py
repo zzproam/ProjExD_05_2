@@ -2,10 +2,9 @@ import pygame as pg
 import sys
 from screen import *
 from ship import *
-from fuel import *
-from score import *
 import os
 import random
+from pygame.locals import *
 WIDTH, HEIGHT = 1600, 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
@@ -310,17 +309,60 @@ class AnimatedShield(pg.sprite.Sprite):
         self.animate()
         self.rect = self.image.get_rect(center=self.ship.rect.center)
 
+class HealthBar():             #ヘルスバークラス
+    def __init__(self,x,y,width,max):
+        self.x = x
+        self.y = y
+        self.width = width 
+        self.max = max #最大HP
+        self.hp = max
+        self.mark = int((self.width-4)/self.max) #HPバーの1メモリ
+
+        self.font = pg.font.Font(None, 32)
+        self.label = self.font.render("HP",True,(255,255,255))
+        self.frame = Rect(self.x + 2 + self.label.get_width(),self.y, self.width,self.label.get_height())   #ヘルスバーのまわり
+        self.bar = Rect(self.x + 4 + self.label.get_width(),self.y + 2,self.width -4, self.label.get_height() -4)  #ヘルスバー自体
+        self.value = Rect(self.x + 4 + self.label.get_width(),self.y + 2, self.width -4, self.label.get_height() -4)  #ヘルスバーの減ったところ
+
+        self.effect_bar = Rect(self.x + 4+self.label.get_width(),self.y+2,self.width -4, self.label.get_height()-4)
+        self.effect_color = (0,255,255)
+
+    def update(self):
+        if self.hp >= self.max:
+            self.hp = self.max
+
+        if self.effect_bar.width > self.mark * self.hp:
+            self.value.width = self.mark * self.hp
+            if self.effect_bar.width >= self.value.width:
+                self.effect_bar.width = self.mark * self.hp
+        elif self.value.width < self.mark * self.hp:
+            self.effect_bar.width = self.mark * self.hp
+            self.value.inflate_ip(1,0)
+
+        if self.effect_bar.width <= self.bar.width /6:
+            self.effect_color - (255,255,0)
+        elif self.effect_color <= self.bat.width /2:
+            self.effect_color = (255,255,0)
+        else:
+            self.effct_color = (0,255,0)
+
+    
+    def draw(self,screen):
+        pg.draw.rect(screen,(255,255,255),self.frame)
+        pg.draw.rect(screen,(0,0,0),self.bar)
+        pg.draw.rect(screen,self.effect_color,self.effect_bar)
+        pg.draw.rect(screen, (0,0,255),self.value)
+        screen.blit(self.label,(self.x,self.y))
+
 
 def main():
+
     # Walk.pngを読み込み
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-
-    score = Score()
-    score2 = Scores()
-    fuels = pg.sprite.Group()
-
+    hp_bar1 = HealthBar(10,10,100,12)
+    hp_bar2 = HealthBar(1200,500,100,12)
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
     bg_img_flipped = pg.transform.flip(bg_img, True, False)
@@ -339,7 +381,7 @@ def main():
     ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
     ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
     ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
-                 ship1_frame_count_move, ship_num=1, new_size=(250, 250))
+                 ship1_frame_count_move, ship_num=1, new_size=(300, 300))
 
     ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
     ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
@@ -406,23 +448,11 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
-
-         # 燃料と船が接触したかの判定
-            for fuel in fuels:
-                if ship1.rect.colliderect(fuel.rect):
-                    score.score += 20
-                    fuel.kill()
-                if ship2.rect.colliderect(fuel.rect):
-                    score2.scores += 20
-                    fuel.kill()
-        # 300フレームに1回，燃料を出現させる
-        if tmr % 300 == 0:
-            fuels.add(Fuel())
+         # 背景をブリット
 
         for y in range(tiles_y):
             for x in range(tiles_x):
                 screen.blit(bg_img, (x * bg_tile_width, y * bg_tile_height))
-
         if bg_x < -bg_img.get_width():
             bg_x = bg_img.get_width()
         if bg_x_flipped < -bg_img.get_width():
@@ -481,10 +511,8 @@ def main():
                 ship2_shield.update()
                 screen.blit(ship2_shield.image, ship2_shield.rect)
         explosions.draw(screen)
-        score.update(screen)
-        score2.update(screen)
-        fuels.draw(screen)
-
+        hp_bar1.draw(screen)
+        hp_bar2.draw(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
@@ -497,3 +525,4 @@ if __name__ == "__main__":
     main()
     pg.quit()
     sys.exit()
+    
