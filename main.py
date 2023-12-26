@@ -6,8 +6,10 @@ from score import *
 from fuel import *
 import os
 import random
+import time
 from pygame.locals import *
 WIDTH, HEIGHT = 1600, 900
+pg.display.set_caption('BattleShip')
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
 idle_image_paths = {
@@ -311,6 +313,96 @@ class AnimatedShield(pg.sprite.Sprite):
         self.animate()
         self.rect = self.image.get_rect(center=self.ship.rect.center)
 
+class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
+    def __init__(self,ship: Ship):
+        super().__init__()
+        self.vx, self.vy = (0,+1)#下方向に
+        self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")#ドーナツを挿入
+        self.rect = self.image.get_rect()
+        self.rect.centerx = ship.rect.centerx
+        self.rect.centery = ship.rect.bottom
+        self.speed = 10#爆弾の速度
+    
+    def update(self):
+        self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
+
+class Bullet2(pg.sprite.Sprite):#矢印プレイヤーの爆弾
+    def __init__(self,ship: Ship):
+        super().__init__()
+        self.vx, self.vy = (0,-1)#上方向に
+        self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")
+        self.rect = self.image.get_rect()
+        self.rect.centerx = ship.rect.centerx
+        self.rect.centery = ship.rect.top
+        self.speed = 10#爆弾の速度
+    
+    def update(self):
+        self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
+class Lightning1(pg.sprite.Sprite):
+    imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
+    def __init__(self, ship: Ship):
+        super().__init__()
+        self.images = [pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)) for img in Lightning1.imgs]
+        
+        # Scale the images to be twice as big
+        self.images = [pg.transform.scale(img, (img.get_width() * 2, img.get_height() * 2)) for img in self.images]
+
+        self.current_frame = 0
+        self.image = self.images[self.current_frame]
+        self.rect = self.image.get_rect()
+        
+        # Positioning the lightning to come out from the bottom of the ship
+        self.rect.centerx = ship.rect.centerx
+        self.rect.top = ship.rect.bottom  # Align the top of the lightning with the bottom of the ship
+        self.animation_done = False
+        
+    def update(self):
+        self.current_frame = (self.current_frame + 1) % len(self.images)
+        self.image = self.images[self.current_frame]
+        if self.current_frame == 0:
+            self.animation_done = True
+        
+class Lightning2(pg.sprite.Sprite):
+    imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
+
+    def __init__(self, ship: Ship):
+        super().__init__()
+        # Load and flip images vertically
+        self.images = [pg.transform.flip(pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)), False, True) for img in Lightning2.imgs]
+
+        # Scale the flipped images to be twice as big
+        self.images = [pg.transform.scale(img, (img.get_width() * 2, img.get_height() * 2)) for img in self.images]
+
+        self.current_frame = 0
+        self.image = self.images[self.current_frame]
+        self.rect = self.image.get_rect()
+        # Position the lightning at the bottom of the ship
+        self.rect.centerx = ship.rect.centerx
+        self.rect.bottom = ship.rect.top  # Align the top of the lightning with the bottom of the ship
+        self.animation_done = False
+        self.hit = False
+    def update(self):
+        self.current_frame = (self.current_frame + 1) % len(self.images)
+        self.image = self.images[self.current_frame]
+        if self.current_frame == 0:
+            self.animation_done = True
+
+class Explosion2(pg.sprite.Sprite):
+    def __init__(self, position):
+        super().__init__()
+        self.images = [pg.image.load(f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
+        self.current_frame = 0
+        self.image = self.images[self.current_frame]  # Set the initial image
+        self.rect = self.image.get_rect(center=position)
+        self.animation_done = False
+
+    def update(self):
+        # Update the frame
+        self.current_frame += 1
+        if self.current_frame < len(self.images):
+            self.image = self.images[self.current_frame]
+        else:
+            self.animation_done = True  # End the animation once all frames have been shown
 class HealthBar():             #ヘルスバークラス
     def __init__(self,x,y,width,max):
         self.x = x
@@ -358,8 +450,6 @@ class HealthBar():             #ヘルスバークラス
 
 
 def main():
-
-    # Walk.pngを読み込み
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -377,14 +467,13 @@ def main():
     bg_x_flipped = bg_img.get_width()
     bg_tile_width = bg_img.get_width()
     bg_tile_height = bg_img.get_height()
-
+    explosion2s = pg.sprite.Group()
     # Calculate how many tiles are needed to cover the screen
     tiles_x = -(-WIDTH // bg_tile_width)  # Ceiling division
     tiles_y = -(-HEIGHT // bg_tile_height)  # Ceiling division
     new_ship_size = (40, 40)
     ship1_frame_count = 8  # Update this if your sprite sheet has a different number of frames
     ship2_frame_count = 4  # Update this if your sprite sheet has a different number of frames
-    explosions = pg.sprite.Group()
     ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
     ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
     ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
@@ -409,6 +498,8 @@ def main():
         pg.K_a: (-1, 0),
         pg.K_d: (1, 0),
     }
+    bullets = pg.sprite.Group()
+    
     for _ in range(5):  # 鳥数が５に
         x = random.randint(0, WIDTH)
         y = random.randint(0, HEIGHT)
@@ -443,6 +534,8 @@ def main():
     explosion1 = Explosion(center=ship1.rect.center)
     explosion2 = Explosion(center=ship2.rect.center)
 
+    lightnings = pg.sprite.Group()
+    explosions = pg.sprite.Group()
     tmr = 0
     clock = pg.time.Clock()
 
@@ -455,6 +548,14 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
+            if event.type == pg.KEYDOWN and event.key == pg.K_RIGHTBRACKET:
+                bullets.add(Bullet1(ship1))
+            if event.type == pg.KEYDOWN and event.key == pg.K_g:
+                bullets.add(Bullet2(ship2))
+            if event.type == pg.KEYDOWN and event.key == pg.K_LEFTBRACKET:
+                lightnings.add(Lightning1(ship1))
+            if event.type == pg.KEYDOWN and event.key == pg.K_h:
+                lightnings.add(Lightning2(ship2))
 
          #燃料と船が接触したかの判定
         for fuel in fuels:
@@ -467,6 +568,23 @@ def main():
         # 300フレームに1回，燃料を出現させる
         if tmr % 300 == 0:
             fuels.add(Fuel())
+     
+        # 背景をブリット
+        for lightning in lightnings:
+            if ship1.rect.colliderect(lightning.rect):
+                explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
+                ex = tmr
+                if ex == tmr + 2:
+                    lightnings.remove(lightning)
+            if ship2.rect.colliderect(lightning.rect):
+                explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
+                ex = tmr
+                if ex == tmr + 2:
+                    lightnings.remove(lightning)
+        screen.blit(bg_img, [0, 0])
+
+        ship1.update(key_lst, ship1_controls, screen)
+        ship2.update(key_lst, ship2_controls, screen)
          # 背景をブリット
 
         for y in range(tiles_y):
@@ -530,6 +648,19 @@ def main():
                 ship2_shield.update()
                 screen.blit(ship2_shield.image, ship2_shield.rect)
         explosions.draw(screen)
+        bullets.update()
+        bullets.draw(screen)
+        lightnings.update()
+        lightnings.draw(screen)
+        explosion2s.update()
+        explosion2s.draw(screen)
+        for lightning in list(lightnings):
+            if lightning.animation_done:
+                lightnings.remove(lightning)
+        explosions.draw(screen)
+        for explosion in list(explosion2s):
+            if explosion.animation_done:
+                explosion2s.remove(explosion)
         hp_bar1.draw(screen)
         hp_bar2.draw(screen)
         score.update(screen)
@@ -540,7 +671,6 @@ def main():
         tmr += 1
         clock.tick(50)
 #
-
 
 if __name__ == "__main__":
 
