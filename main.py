@@ -4,9 +4,8 @@ from screen import *
 from ship import *
 import os
 import random
-from Bullet import *
 import time
-WIDTH, HEIGHT = 1400, 600
+WIDTH, HEIGHT = 1600, 900
 pg.display.set_caption('BattleShip')
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
@@ -317,8 +316,8 @@ class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
         self.vx, self.vy = (0,+1)#下方向に
         self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")#ドーナツを挿入
         self.rect = self.image.get_rect()
-        self.rect.centery = ship.rect.centery+ship.rect.height*self.vy
-        self.rect.centerx = ship.rect.centerx+ship.rect.width*self.vx
+        self.rect.centerx = ship.rect.centerx
+        self.rect.centery = ship.rect.bottom
         self.speed = 10#爆弾の速度
     
     def update(self):
@@ -330,46 +329,12 @@ class Bullet2(pg.sprite.Sprite):#矢印プレイヤーの爆弾
         self.vx, self.vy = (0,-1)#上方向に
         self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")
         self.rect = self.image.get_rect()
-        self.rect.centery = ship.rect.centery+ship.rect.height*self.vy
-        self.rect.centerx = ship.rect.centerx+ship.rect.width*self.vx
+        self.rect.centerx = ship.rect.centerx
+        self.rect.centery = ship.rect.top
         self.speed = 10#爆弾の速度
     
     def update(self):
         self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
-def main():
-
-    # Walk.pngを読み込み
-    bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
-    birds = pg.sprite.Group()
-    screen = pg.display.set_mode((WIDTH, HEIGHT))
-
-    bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
-    bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
-    bg_img_flipped = pg.transform.flip(bg_img, True, False)
-    bg_x = 0
-    bg_x_flipped = bg_img.get_width()
-    bg_tile_width = bg_img.get_width()
-    bg_tile_height = bg_img.get_height()
-
-    # Calculate how many tiles are needed to cover the screen
-    tiles_x = -(-WIDTH // bg_tile_width)  # Ceiling division
-    tiles_y = -(-HEIGHT // bg_tile_height)  # Ceiling division
-    new_ship_size = (40, 40)
-    ship1_frame_count = 8  # Update this if your sprite sheet has a different number of frames
-    ship2_frame_count = 4  # Update this if your sprite sheet has a different number of frames
-    explosions = pg.sprite.Group()
-    ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
-    ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
-    ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
-                 ship1_frame_count_move, ship_num=1, new_size=(100,100))
-
-    ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
-    ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
-    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle,
-                 ship2_frame_count_move, ship_num=2, new_size=(100,100))
-
-    ships = pg.sprite.Group(ship1, ship2)
-
 class Lightning1(pg.sprite.Sprite):
     imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
     def __init__(self, ship: Ship):
@@ -419,7 +384,7 @@ class Lightning2(pg.sprite.Sprite):
         if self.current_frame == 0:
             self.animation_done = True
 
-class Explosion(pg.sprite.Sprite):
+class Explosion2(pg.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
         self.images = [pg.image.load(f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
@@ -438,12 +403,35 @@ class Explosion(pg.sprite.Sprite):
 
 
 def main():
+    bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
+    birds = pg.sprite.Group()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    bg_img = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
-    # クロックの作成
 
-    ship1 = Ship(1, (100, 200))
-    ship2 = Ship(7, (1000, 500))
+    bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
+    bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
+    bg_img_flipped = pg.transform.flip(bg_img, True, False)
+    bg_x = 0
+    bg_x_flipped = bg_img.get_width()
+    bg_tile_width = bg_img.get_width()
+    bg_tile_height = bg_img.get_height()
+    explosion2s = pg.sprite.Group()
+    # Calculate how many tiles are needed to cover the screen
+    tiles_x = -(-WIDTH // bg_tile_width)  # Ceiling division
+    tiles_y = -(-HEIGHT // bg_tile_height)  # Ceiling division
+    new_ship_size = (40, 40)
+    ship1_frame_count = 8  # Update this if your sprite sheet has a different number of frames
+    ship2_frame_count = 4  # Update this if your sprite sheet has a different number of frames
+    ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
+    ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
+    ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
+                 ship1_frame_count_move, ship_num=1, new_size=(250, 250))
+
+    ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
+    ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
+    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle,
+                 ship2_frame_count_move, ship_num=2, new_size=(250, 250))
+
+    ships = pg.sprite.Group(ship1, ship2)
 
     ship1_controls = {
         pg.K_UP: (0, -1),
@@ -518,12 +506,12 @@ def main():
         # 背景をブリット
         for lightning in lightnings:
             if ship1.rect.colliderect(lightning.rect):
-                explosions.add(Explosion(ship1.rect.center))  # Create an explosion at ship2's location
+                explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
                 ex = tmr
                 if ex == tmr + 2:
                     lightnings.remove(lightning)
             if ship2.rect.colliderect(lightning.rect):
-                explosions.add(Explosion(ship2.rect.center))  # Create an explosion at ship2's location
+                explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
                 ex = tmr
                 if ex == tmr + 2:
                     lightnings.remove(lightning)
@@ -531,8 +519,6 @@ def main():
 
         ship1.update(key_lst, ship1_controls, screen)
         ship2.update(key_lst, ship2_controls, screen)
-        bullets.update()
-        bullets.draw(screen)
          # 背景をブリット
 
         for y in range(tiles_y):
@@ -601,15 +587,15 @@ def main():
         bullets.draw(screen)
         lightnings.update()
         lightnings.draw(screen)
-        explosions.update()
-        
+        explosion2s.update()
+        explosion2s.draw(screen)
         for lightning in list(lightnings):
             if lightning.animation_done:
                 lightnings.remove(lightning)
         explosions.draw(screen)
-        for explosion in list(explosions):
+        for explosion in list(explosion2s):
             if explosion.animation_done:
-                explosions.remove(explosion)
+                explosion2s.remove(explosion)
         pg.display.update()
         tmr += 1
         clock.tick(50)
