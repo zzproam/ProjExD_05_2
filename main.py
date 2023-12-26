@@ -50,7 +50,7 @@ def main():
         # 背景をブリット
         screen.blit(bg_img, [0, 0])
         # # 300フレームに1回，燃料を出現させる
-        if tmr % 4 == 0:
+        if tmr % 300 == 0:
             fuels.add(Fuel())
 
         ship1.update(key_lst, ship1_controls, screen)
