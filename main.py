@@ -39,34 +39,52 @@ def restrict_ship_movement(ship, ship_num):
     ship.rect.bottom = min(max_y, max(ship.rect.bottom, min_y))
 
 
-
-class Explosion(pg.sprite.Sprite):
+class Explosion(pg.sprite.Sprite): 
+    """
+    キャラクターが死んだ時に爆発アニメーションを起動する
+    """
     def __init__(self, center, size=(100, 100)):
         super().__init__()
+        # 爆発画像のリストを初期化
         self.images = []
+        # 爆発画像を読み込むメソッドを呼び出す
         self.load_images()
+        # 現在のフレーム番号を初期化
         self.current_frame = 0
+        # 最初の爆発画像を設定
         self.image = self.images[self.current_frame]
+        # 爆発画像の位置と大きさを設定
         self.rect = self.image.get_rect(center=center)
+        # フレーム数をカウントする変数を初期化
         self.frame_count = 0
+        # アニメーションの速度を設定
         self.animation_speed = 1
-        # Total frames for the explosion animation
-        self.total_frames = 10 * 5  # Number of images times desired frames per image
+        # アニメーションの総フレーム数を設定
+        self.total_frames = 10 * 5  
 
     def load_images(self):
-        for i in range(1, 11):  # Assuming you have 10 images for the explosion
+        # 爆発画像を読み込む
+        for i in range(1, 11):  
+            # 各爆発画像を読み込む
             img = pg.image.load(
                 f'{MAIN_DIR}/fig/Explosion_{i}.png').convert_alpha()
-            img = pg.transform.scale(img, (100, 100))  # Scale to desired size
+            # 画像のサイズを調整
+            img = pg.transform.scale(img, (100, 100))  
+            # 画像をリストに追加
             self.images.append(img)
 
     def update(self):
+        # アニメーションを更新する
         if self.frame_count < self.total_frames or self.current_frame < len(self.images) - 1:
+            # 現在のフレームを計算
             self.current_frame = (self.frame_count // 5) % len(self.images)
+            # 現在の画像を更新
             self.image = self.images[int(self.current_frame)]
+            # フレームカウントを増加
             self.frame_count += 1
         else:
-            self.kill()  # Kill the sprite after the animation
+            # アニメーションが終了したら、スプライトを削除
+            self.kill()  
 
 
 class Blink(pg.sprite.Sprite):
@@ -260,32 +278,25 @@ class Ship(pg.sprite.Sprite):
 
 
 class Shield(pg.sprite.Sprite):
-    # シールドのクラスを作成
-    def __init__(self, ship: Ship, radius: int = 75, color=(0, 0, 255), width=2):
+    def __init__(self, ship: Ship, image_path=None, frame_count=0, new_size=None, radius=75, color=(0, 0, 255), width=2):
         super().__init__()
-        # ship自体、半径、色、幅を設定
         self.ship = ship
         self.radius = radius
         self.color = color
         self.width = width
+        self.is_animated = image_path is not None and frame_count > 0
 
-    def update(self, screen: pg.Surface):
-        # 円を描く
-        pg.draw.circle(screen, self.color, self.ship.rect.center,
-                       self.radius, self.width)
-
-
-class AnimatedShield(pg.sprite.Sprite):
-    def __init__(self, ship: Ship, image_path, frame_count, new_size=None):
-        super().__init__()
-        self.ship = ship
-        self.spritesheet = pg.image.load(image_path).convert_alpha()
-        self.frame_count = frame_count
-        self.frames = self.load_frames(self.frame_count, new_size)
-        self.current_frame = 0
-        self.animation_speed = 0.2
-        self.image = self.frames[self.current_frame]
-        self.rect = self.image.get_rect(center=self.ship.rect.center)
+        if self.is_animated:
+            self.spritesheet = pg.image.load(image_path).convert_alpha()
+            self.frame_count = frame_count
+            self.frames = self.load_frames(frame_count, new_size)
+            self.current_frame = 0
+            self.animation_speed = 0.2
+            self.image = self.frames[self.current_frame]
+            self.rect = self.image.get_rect(center=self.ship.rect.center)
+        else:
+            self.image = None
+            self.rect = None
 
     def load_frames(self, frame_count, new_size):
         frames = []
@@ -306,9 +317,13 @@ class AnimatedShield(pg.sprite.Sprite):
         self.image = self.frames[int(self.current_frame)]
         self.rect = self.image.get_rect(center=self.ship.rect.center)
 
-    def update(self):
-        self.animate()
-        self.rect = self.image.get_rect(center=self.ship.rect.center)
+    def update(self, screen: pg.Surface):
+        if self.is_animated:
+            self.animate()
+            screen.blit(self.image, self.rect)
+        else:
+            pg.draw.circle(screen, self.color, self.ship.rect.center, self.radius, self.width)
+
 
 class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
     def __init__(self,ship: Ship):
@@ -323,6 +338,7 @@ class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
     def update(self):
         self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
 
+
 class Bullet2(pg.sprite.Sprite):#矢印プレイヤーの爆弾
     def __init__(self,ship: Ship):
         super().__init__()
@@ -335,6 +351,8 @@ class Bullet2(pg.sprite.Sprite):#矢印プレイヤーの爆弾
     
     def update(self):
         self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
+
+
 class Lightning1(pg.sprite.Sprite):
     imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
     def __init__(self, ship: Ship):
@@ -359,6 +377,7 @@ class Lightning1(pg.sprite.Sprite):
         if self.current_frame == 0:
             self.animation_done = True
         
+
 class Lightning2(pg.sprite.Sprite):
     imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
 
@@ -378,11 +397,13 @@ class Lightning2(pg.sprite.Sprite):
         self.rect.bottom = ship.rect.top  # Align the top of the lightning with the bottom of the ship
         self.animation_done = False
         self.hit = False
+
     def update(self):
         self.current_frame = (self.current_frame + 1) % len(self.images)
         self.image = self.images[self.current_frame]
         if self.current_frame == 0:
             self.animation_done = True
+
 
 class Explosion2(pg.sprite.Sprite):
     def __init__(self, position):
@@ -400,6 +421,8 @@ class Explosion2(pg.sprite.Sprite):
             self.image = self.images[self.current_frame]
         else:
             self.animation_done = True  # End the animation once all frames have been shown
+
+            
 class HealthBar():             #ヘルスバークラス
     def __init__(self,x,y,width,max):
         self.x = x
@@ -447,16 +470,97 @@ class HealthBar():             #ヘルスバークラス
 
 
 def main():
+    screen = initialize_screen()
+    birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield= initialize_sprites()
+    hp_bar1, hp_bar2, score, score2 = initialize_ui_elements()
+    bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
+
+    clock = pg.time.Clock()
+    tmr = 0
+    while True:
+        handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
+        key_states = pg.key.get_pressed()  # Get the current state of the keyboard
+        handle_events(pg.event.get(), key_states, ships, bullets, lightnings, ship1_blink, ship2_blink)
+
+        update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score, score2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen)
+
+        draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score, score2, ship1_shield, ship2_shield, key_states)
+
+        pg.display.update()
+        tmr += 1
+        clock.tick(50)
+  
+
+def initialize_screen():
+    screen = pg.display.set_mode((WIDTH, HEIGHT))
+    pg.display.set_caption('ケーキ泥棒')
+    return screen
+
+
+def initialize_sprites():
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')
     birds = pg.sprite.Group()
-    screen = pg.display.set_mode((WIDTH, HEIGHT))
+    for _ in range(5):
+        x = random.randint(0, WIDTH)
+        y = random.randint(0, HEIGHT)
+        speed_x = random.choice([1, 2, 3])
+        speed_y = random.choice([-3, -2, -1, 1, 2, 3])
+        bird = Bird(bird_image_path, (x, y), frame_count=6, speed=(speed_x, speed_y))
+        birds.add(bird)
 
-    score = Score()
-    score2 = Scores()
+    ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
+    ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
+    ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
+    ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
+
+    # Instantiate Ship objects
+    ship1 = Ship(1, (100, 200), ship1_frame_count_idle, ship1_frame_count_move, ship_num=1, new_size=(150, 150))
+    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle, ship2_frame_count_move, ship_num=2, new_size=(150, 150))
+
+    shield1_sprite_path = os.path.join(MAIN_DIR, 'fig/shield1.png')
+    shield1_frame_count = 8  # The number of frames in the shield1 sprite sheet
+    shield2_sprite_path = os.path.join(MAIN_DIR, 'fig/shield2.png')
+    shield2_frame_count = 7  # The number of frames in the shield2 sprite sheet
+    # Add these lines after creating ship1 and ship2 in initialize_sprites
+    ship1_shield = Shield(ship1, shield1_sprite_path , shield1_frame_count, new_size=(300, 300))
+    ship2_shield = Shield(ship2, shield2_sprite_path , shield2_frame_count, new_size=(300, 300))
+
+    blink_frame_count_ship1 = 8  # Replace with the correct number of blink frames for ship1
+    blink_frame_count_ship2 = 8  # Replace with the correct number of blink frames for ship2
+
+    blink_image_path_ship1 = os.path.join(MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
+    blink_image_path_ship2 = os.path.join(MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
+
+    # Instantiate Blink objects
+    ship1_blink = Blink(ship1, blink_image_path_ship1, blink_frame_count_ship1)
+    ship2_blink = Blink(ship2, blink_image_path_ship2, blink_frame_count_ship2)
+    # Assign Blink instances to Ships
+    ship1.blink_instance = ship1_blink
+    ship2.blink_instance = ship2_blink
+
+    ships = pg.sprite.Group(ship1, ship2)
+    bullets = pg.sprite.Group()
+    lightnings = pg.sprite.Group()
+    explosions = pg.sprite.Group()
+    explosion2s = pg.sprite.Group()
     fuels = pg.sprite.Group()
 
+    # Update the return statement to include these new instances
+    return birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield
+
+
+
+def initialize_ui_elements():
+    # Initialization code for UI elements like health bars and scores
     hp_bar1 = HealthBar(10,10,100,12)
     hp_bar2 = HealthBar(1200,500,100,12)
+    score = Score()
+    score2 = Scores()
+    return hp_bar1, hp_bar2, score, score2
+
+
+def initialize_background():
+    # Initialization code for background elements
     bg_img_original = pg.image.load(f"{MAIN_DIR}/imgs/bg_ocean.png")
     bg_img = pg.transform.scale(bg_img_original, (WIDTH, HEIGHT))
     bg_img_flipped = pg.transform.flip(bg_img, True, False)
@@ -464,207 +568,176 @@ def main():
     bg_x_flipped = bg_img.get_width()
     bg_tile_width = bg_img.get_width()
     bg_tile_height = bg_img.get_height()
-    explosion2s = pg.sprite.Group()
-    # Calculate how many tiles are needed to cover the screen
-    tiles_x = -(-WIDTH // bg_tile_width)  # Ceiling division
-    tiles_y = -(-HEIGHT // bg_tile_height)  # Ceiling division
-    new_ship_size = (40, 40)
-    ship1_frame_count = 8  # Update this if your sprite sheet has a different number of frames
-    ship2_frame_count = 4  # Update this if your sprite sheet has a different number of frames
-    ship1_frame_count_idle = 10  # Replace with the number of idle frames for ship1
-    ship1_frame_count_move = 10  # Replace with the number of move frames for ship1
-    ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
-                 ship1_frame_count_move, ship_num=1, new_size=(150, 150))
+    tiles_x = -(-WIDTH // bg_tile_width)
+    tiles_y = -(-HEIGHT // bg_tile_height)
+    return bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y
 
-    ship2_frame_count_idle = 10  # Replace with the number of idle frames for ship2
-    ship2_frame_count_move = 10  # Replace with the number of move frames for ship2
-    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle,
-                 ship2_frame_count_move, ship_num=2, new_size=(150, 150))
 
-    ships = pg.sprite.Group(ship1, ship2)
+def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped):
+    bg_x -= 1
+    bg_x_flipped -= 1
 
-    ship1_controls = {
-        pg.K_UP: (0, -1),
-        pg.K_DOWN: (0, +1),
-        pg.K_LEFT: (-1, 0),
-        pg.K_RIGHT: (1, 0),
-    }
-    ship2_controls = {
-        pg.K_w: (0, -1),
-        pg.K_s: (0, +1),
-        pg.K_a: (-1, 0),
-        pg.K_d: (1, 0),
-    }
-    bullets = pg.sprite.Group()
-    
-    for _ in range(5):  # 鳥数が５に
-        x = random.randint(0, WIDTH)
-        y = random.randint(0, HEIGHT)
-        # スピードをランダムに
-        speed_x = random.choice([1, 2, 3])
-        speed_y = random.choice([-3, -2, -1, 1, 2, 3])
-        bird = Bird(bird_image_path, (x, y), frame_count=6,
-                    speed=(speed_x, speed_y))
-        birds.add(bird)
+    if bg_x < -bg_tile_width:
+        bg_x = bg_tile_width
+    if bg_x_flipped < -bg_tile_width:
+        bg_x_flipped = bg_tile_width
 
-    shield1_sprite_path = os.path.join(MAIN_DIR, 'fig/shield1.png')
-    shield1_frame_count = 8  # The number of frames in the shield1 sprite sheet
-    shield2_sprite_path = os.path.join(MAIN_DIR, 'fig/shield2.png')
-    shield2_frame_count = 7  # The number of frames in the shield2 sprite sheet
+    for y in range(tiles_y):
+        for x in range(tiles_x):
+            screen.blit(bg_img, (x * bg_tile_width + bg_x, y * bg_tile_height))
+            screen.blit(bg_img_flipped, (x * bg_tile_width + bg_x_flipped, y * bg_tile_height))
 
-    # Example size, adjust this to your preference
-    new_shield_size = (200, 200)
+    return bg_x, bg_x_flipped
 
-    ship1_shield = AnimatedShield(
-        ship1, shield1_sprite_path, shield1_frame_count, new_size=(300, 300))
-    ship2_shield = AnimatedShield(
-        ship2, shield2_sprite_path, shield2_frame_count, new_size=(280, 280))
-    # Update with your blink sprite sheet file name
-    blink_image_path = os.path.join(MAIN_DIR, 'fig/blink.png')
-    blink_frame_count = 8  # Update with the correct number of frames
 
-    ship1_blink = Blink(ship1, blink_image_path, blink_frame_count)
-    ship2_blink = Blink(ship2, blink_image_path, blink_frame_count)
-    ship1.blink_instance = ship1_blink
-    ship2.blink_instance = ship2_blink
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink):
+    # Retrieve ship1 and ship2 from the ships sprite group
+    ship1 = next((ship for ship in ships if ship.ship_num == 1), None)
+    ship2 = next((ship for ship in ships if ship.ship_num == 2), None)
 
-    explosion1 = Explosion(center=ship1.rect.center)
-    explosion2 = Explosion(center=ship2.rect.center)
-
-    lightnings = pg.sprite.Group()
-    explosions = pg.sprite.Group()
-    tmr = 0
-    clock = pg.time.Clock()
-
-    while True:
-        bg_x -= 1
-        bg_x_flipped -= 1
-        ships.draw(screen)
-        # イベントハンドラー
-        key_lst = pg.key.get_pressed()
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                return
-            if event.type == pg.KEYDOWN and event.key == pg.K_RIGHTBRACKET:
-                bullets.add(Bullet1(ship1))
-            if event.type == pg.KEYDOWN and event.key == pg.K_g:
-                bullets.add(Bullet2(ship2))
-            if event.type == pg.KEYDOWN and event.key == pg.K_LEFTBRACKET:
+    for event in events:
+        if event.type == pg.QUIT:
+            pg.quit()
+            sys.exit()
+        elif event.type == pg.KEYDOWN:
+            # add bullet for ship1
+            if event.key == pg.K_RIGHTBRACKET:
+                if ship1:
+                    bullets.add(Bullet1(ship1))
+            # add bullet for ship2
+            elif event.key == pg.K_g:
+                if ship2:
+                    bullets.add(Bullet2(ship2))
+            # add lightning for ship1         
+            elif event.key == pg.K_LEFTBRACKET:
                 lightnings.add(Lightning1(ship1))
-            if event.type == pg.KEYDOWN and event.key == pg.K_h:
+            # add lightning for ship2
+            elif event.key == pg.K_h:
                 lightnings.add(Lightning2(ship2))
+            # blinking for ship2
+            elif event.key == pg.K_LSHIFT:
+                direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
+                if not ship2.blinking:
+                    ship2_blink.start_blink(direction)
+            # blinking for ship1
+            elif event.key == pg.K_RSHIFT:
+                direction = (-1, 0) if key_states[pg.K_LEFT] else (1, 0)
+                if not ship1.blinking:
+                    ship1_blink.start_blink(direction)
 
-         #燃料と船が接触したかの判定
-        for fuel in fuels:
-                if ship1.rect.colliderect(fuel.rect):
-                    score.score += 20
-                    fuel.kill()
-                if ship2.rect.colliderect(fuel.rect):
-                    score2.scores += 20
-                    fuel.kill()
-        # 300フレームに1回，燃料を出現させる
-        if tmr % 300 == 0:
-            fuels.add(Fuel())
-     
-        # 背景をブリット
+            
+
+def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score, score2):
+    # Retrieve ship1 and ship2 from the ships sprite group
+    ship1 = next((ship for ship in ships if ship.ship_num == 1), None)
+    ship2 = next((ship for ship in ships if ship.ship_num == 2), None)
+
+    # Example collision handling between ships and bullets
+    for bullet in bullets:
+        hits = pg.sprite.spritecollide(bullet, ships, False)
+        for hit in hits:
+            explosions.add(Explosion(hit.rect.center, size=(100, 100)))
+            bullet.kill()
+    
+    # create an explosion effect when the lightning hits the character
+    for lightning in lightnings:
         for lightning in lightnings:
             if ship1.rect.colliderect(lightning.rect):
                 explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
                 ex = tmr
                 if ex == tmr + 2:
                     lightnings.remove(lightning)
+
             if ship2.rect.colliderect(lightning.rect):
                 explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
                 ex = tmr
                 if ex == tmr + 2:
                     lightnings.remove(lightning)
-        screen.blit(bg_img, [0, 0])
-         # 背景をブリット
 
-        for y in range(tiles_y):
-            for x in range(tiles_x):
-                screen.blit(bg_img, (x * bg_tile_width, y * bg_tile_height))
-        if bg_x < -bg_img.get_width():
-            bg_x = bg_img.get_width()
-        if bg_x_flipped < -bg_img.get_width():
-            bg_x_flipped = bg_img.get_width()
-        screen.blit(bg_img, (bg_x, 0))
-        screen.blit(bg_img_flipped, (bg_x_flipped, 0))
 
-        if key_lst[pg.K_LSHIFT]:
-            direction = (-1, 0) if key_lst[pg.K_a] else (1, 0)
-            if not ship2.blinking:
-                ship2_blink.start_blink(direction)
+def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score, score2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen):
+    # Global definitions for ship controls
+    ship1_controls = {
+        pg.K_UP: (0, -1),
+        pg.K_DOWN: (0, 1),
+        pg.K_LEFT: (-1, 0),
+        pg.K_RIGHT: (1, 0),
+    }
 
-        if key_lst[pg.K_RSHIFT]:
-            direction = (-1, 0) if key_lst[pg.K_LEFT] else (1, 0)
-            if not ship1.blinking:
-                ship1_blink.start_blink(direction)
+    ship2_controls = {
+        pg.K_w: (0, -1),
+        pg.K_s: (0, 1),
+        pg.K_a: (-1, 0),
+        pg.K_d: (1, 0),
+    }
 
-        # Inside the game loop
-        collision = pg.sprite.collide_rect(ship1, ship2)
-        for explosion in explosions:
-            explosion.update()
-            screen.blit(explosion.image, explosion.rect)
+    # Update sprites
+    for ship in ships:
+        if ship.ship_num == 1:
+            ship.update(key_states, ship1_controls, screen)
+        elif ship.ship_num == 2:
+            ship.update(key_states, ship2_controls, screen)
 
-        if collision:
-            # Add the explosions to the explosions group
-            explosions.add(explosion1, explosion2)
-            explosions.update()
+    bullets.update()
+    lightnings.update()
+    explosion2s.update()
+    explosions.update()
+    fuels.update()
+    birds.update()
 
-            explosion1.rect.center = ship1.rect.center
-            explosion2.rect.center = ship2.rect.center
-            # Kill both ships to remove them from the game
-            ship1.kill()
-            ship2.kill()
+    # Check collisions and interactions
+    handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score, score2)   
 
-        explosions.update()
+    # Blinking updates
+    if ship1.alive():
         ship1_blink.update(screen)
+    if ship2.alive():
         ship2_blink.update(screen)
-        birds.update()  # 鳥をアップデート
-        birds.draw(screen)
-        if ship1.alive():
-            ship1.update(key_lst, ship1_controls, screen)
-        if ship2.alive():
-            ship2.update(key_lst, ship2_controls, screen)
-        for ship in ships:
-            if ship.alive():
-                screen.blit(ship.image, ship.rect)
-            else:
-                ship.kill()
-        if ship1.alive():
-            if key_lst[pg.K_RETURN]:
-                ship1_shield.update()
-                screen.blit(ship1_shield.image, ship1_shield.rect)
 
-        if ship2.alive():
-            if key_lst[pg.K_TAB]:
-                ship2_shield.update()
-                screen.blit(ship2_shield.image, ship2_shield.rect)
-        explosions.draw(screen)
-        bullets.update()
-        bullets.draw(screen)
-        lightnings.update()
-        lightnings.draw(screen)
-        explosion2s.update()
-        explosion2s.draw(screen)
-        for lightning in list(lightnings):
-            if lightning.animation_done:
-                lightnings.remove(lightning)
-        explosions.draw(screen)
-        for explosion in list(explosion2s):
-            if explosion.animation_done:
-                explosion2s.remove(explosion)
-        hp_bar1.draw(screen)
-        hp_bar2.draw(screen)
-        score.update(screen)
-        score2.update(screen)
-        fuels.draw(screen)
+    # remove lightning if the animation is done
+    for lightning in list(lightnings):
+        if lightning.animation_done:
+            lightnings.remove(lightning)
 
-        pg.display.update()
-        tmr += 1
-        clock.tick(50)
-#
+    # remove explosion2s if the animation is done
+    for explosion in list(explosion2s):
+        if explosion.animation_done:
+             explosion2s.remove(explosion)
+
+def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score, score2, ship1_shield, ship2_shield, key_states):
+    # Draw all sprites
+    ships.draw(screen)
+    bullets.draw(screen)
+    lightnings.draw(screen)
+    explosion2s.draw(screen)
+    explosions.draw(screen)
+    birds.draw(screen)
+    fuels.draw(screen)
+
+    # Draw UI elements
+    hp_bar1.draw(screen)
+    hp_bar2.draw(screen)
+    score.update(screen)
+    score2.update(screen)
+
+    # Access ship1 and ship2 from the ships group
+    for ship in ships:
+        if ship.ship_num == 1 and ship.alive() and key_states[pg.K_RETURN]:
+            ship1_shield.update(screen)
+            screen.blit(ship1_shield.image, ship1_shield.rect)
+        elif ship.ship_num == 2 and ship.alive() and key_states[pg.K_TAB]:
+            ship2_shield.update(screen)
+            screen.blit(ship2_shield.image, ship2_shield.rect)
+    
+
+# Other necessary functions...
+
+if __name__ == "__main__":
+    pg.init()
+    main()
+    pg.quit()
+    sys.exit()
+
 
 if __name__ == "__main__":
 
@@ -673,3 +746,5 @@ if __name__ == "__main__":
     pg.quit()
     sys.exit()
     
+
+
