@@ -349,50 +349,37 @@ class Bullet(pg.sprite.Sprite):
             self.kill()
 
 
-class Lightning1(pg.sprite.Sprite):
-    imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
-    def __init__(self, ship: Ship):
+class Lightning(pg.sprite.Sprite):
+    def __init__(self, ship: Ship, direction: str):
         super().__init__()
-        self.images = [pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)) for img in Lightning1.imgs]
-        
-        # Scale the images to be twice as big
-        self.images = [pg.transform.scale(img, (img.get_width() * 2, img.get_height() * 2)) for img in self.images]
-
+        self.load_images(direction)  # Load images based on direction
         self.current_frame = 0
         self.image = self.images[self.current_frame]
-        self.rect = self.image.get_rect()
-        
-        # Positioning the lightning to come out from the bottom of the ship
-        self.rect.centerx = ship.rect.centerx
-        self.rect.top = ship.rect.bottom  # Align the top of the lightning with the bottom of the ship
+        self.rect = self.image.get_rect(centerx=ship.rect.centerx)
+
+        # Set the initial position of the lightning
+        if direction == "up":
+            self.rect.bottom = ship.rect.top
+        elif direction == "down":
+            self.rect.top = ship.rect.bottom
+        else:
+            raise ValueError("Invalid direction for lightning. Choose 'up' or 'down'.")
+
         self.animation_done = False
-        
-    def update(self):
-        self.current_frame = (self.current_frame + 1) % len(self.images)
-        self.image = self.images[self.current_frame]
-        if self.current_frame == 0:
-            self.animation_done = True
-        
 
-class Lightning2(pg.sprite.Sprite):
-    imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
+    def load_images(self, direction):
+        imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
+        self.images = []
 
-    def __init__(self, ship: Ship):
-        super().__init__()
-        # Load and flip images vertically
-        self.images = [pg.transform.flip(pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)), False, True) for img in Lightning2.imgs]
+        for img in imgs:
+            image = pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)).convert_alpha()
+            image = pg.transform.scale(image, (image.get_width() * 2, image.get_height() * 2))
 
-        # Scale the flipped images to be twice as big
-        self.images = [pg.transform.scale(img, (img.get_width() * 2, img.get_height() * 2)) for img in self.images]
+            # Flip the image for upward direction
+            if direction == "up":
+                image = pg.transform.flip(image, False, True)
 
-        self.current_frame = 0
-        self.image = self.images[self.current_frame]
-        self.rect = self.image.get_rect()
-        # Position the lightning at the bottom of the ship
-        self.rect.centerx = ship.rect.centerx
-        self.rect.bottom = ship.rect.top  # Align the top of the lightning with the bottom of the ship
-        self.animation_done = False
-        self.hit = False
+            self.images.append(image)
 
     def update(self):
         self.current_frame = (self.current_frame + 1) % len(self.images)
@@ -606,10 +593,10 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                     bullets.add(Bullet(ship2, "up"))
             # add lightning for ship1         
             elif event.key == pg.K_LEFTBRACKET:
-                lightnings.add(Lightning1(ship1))
+                lightnings.add(Lightning(ship1, "down"))
             # add lightning for ship2
             elif event.key == pg.K_h:
-                lightnings.add(Lightning2(ship2))
+                lightnings.add(Lightning(ship2, "up"))
             # blinking for ship2
             elif event.key == pg.K_LSHIFT:
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
