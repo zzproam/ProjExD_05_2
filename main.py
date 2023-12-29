@@ -325,32 +325,28 @@ class Shield(pg.sprite.Sprite):
             pg.draw.circle(screen, self.color, self.ship.rect.center, self.radius, self.width)
 
 
-class Bullet1(pg.sprite.Sprite):#wasdプレイヤーの爆弾
-    def __init__(self,ship: Ship):
+class Bullet(pg.sprite.Sprite):
+    def __init__(self, ship: Ship, direction: str):
         super().__init__()
-        self.vx, self.vy = (0,+1)#下方向に
-        self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")#ドーナツを挿入
-        self.rect = self.image.get_rect()
-        self.rect.centerx = ship.rect.centerx
-        self.rect.centery = ship.rect.bottom
-        self.speed = 10#爆弾の速度
-    
-    def update(self):
-        self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
-
-
-class Bullet2(pg.sprite.Sprite):#矢印プレイヤーの爆弾
-    def __init__(self,ship: Ship):
-        super().__init__()
-        self.vx, self.vy = (0,-1)#上方向に
         self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")
-        self.rect = self.image.get_rect()
-        self.rect.centerx = ship.rect.centerx
-        self.rect.centery = ship.rect.top
-        self.speed = 10#爆弾の速度
-    
+        self.rect = self.image.get_rect(center=(ship.rect.centerx,
+                                                ship.rect.top if direction == "up" else ship.rect.bottom))
+        self.speed = 10
+
+        self.ship_num = ship.ship_num  # attribute to identify the ship that fired the bullet
+
+        if direction == "up":
+            self.vx, self.vy = (0, -1)
+        elif direction == "down":
+            self.vx, self.vy = (0, 1)
+        else:
+            raise ValueError("Invalid direction for bullet. Choose 'up' or 'down'.")
+
     def update(self):
-        self.rect.move_ip(+self.speed*self.vx, +self.speed*self.vy)
+        self.rect.move_ip(self.speed * self.vx, self.speed * self.vy)
+        # Remove bullet if it goes off-screen
+        if self.rect.bottom < 0 or self.rect.top > HEIGHT:
+            self.kill()
 
 
 class Lightning1(pg.sprite.Sprite):
@@ -603,11 +599,11 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             # add bullet for ship1
             if event.key == pg.K_RIGHTBRACKET:
                 if ship1:
-                    bullets.add(Bullet1(ship1))
+                    bullets.add(Bullet(ship1, "down"))
             # add bullet for ship2
             elif event.key == pg.K_g:
                 if ship2:
-                    bullets.add(Bullet2(ship2))
+                    bullets.add(Bullet(ship2, "up"))
             # add lightning for ship1         
             elif event.key == pg.K_LEFTBRACKET:
                 lightnings.add(Lightning1(ship1))
@@ -632,27 +628,27 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     ship1 = next((ship for ship in ships if ship.ship_num == 1), None)
     ship2 = next((ship for ship in ships if ship.ship_num == 2), None)
 
-    # Example collision handling between ships and bullets
-    for bullet in bullets:
-        hits = pg.sprite.spritecollide(bullet, ships, False)
-        for hit in hits:
-            explosions.add(Explosion(hit.rect.center, size=(100, 100)))
-            bullet.kill()
+    for bullet in list(bullets):
+        if ship1 and bullet.rect.colliderect(ship1.rect) and bullet.ship_num != ship1.ship_num:
+            explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
+            bullets.remove(bullet)
+        elif ship2 and bullet.rect.colliderect(ship2.rect) and bullet.ship_num != ship2.ship_num:
+            explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
+            bullets.remove(bullet)
     
     # create an explosion effect when the lightning hits the character
     for lightning in lightnings:
-        for lightning in lightnings:
-            if ship1.rect.colliderect(lightning.rect):
-                explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
-                ex = tmr
-                if ex == tmr + 2:
-                    lightnings.remove(lightning)
+        if ship1.rect.colliderect(lightning.rect):
+            explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
+            ex = tmr
+            if ex == tmr + 2:
+                lightnings.remove(lightning)
 
-            if ship2.rect.colliderect(lightning.rect):
-                explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
-                ex = tmr
-                if ex == tmr + 2:
-                    lightnings.remove(lightning)
+        if ship2.rect.colliderect(lightning.rect):
+            explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
+            ex = tmr
+            if ex == tmr + 2:
+                lightnings.remove(lightning)
 
 
 def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score, score2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen):
@@ -703,6 +699,8 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
     for explosion in list(explosion2s):
         if explosion.animation_done:
              explosion2s.remove(explosion)
+    
+    
 
 def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score, score2, ship1_shield, ship2_shield, key_states):
     # Draw all sprites
