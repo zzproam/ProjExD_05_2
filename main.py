@@ -532,11 +532,11 @@ def initialize_ui_elements():
     UI要素(ヘルスバー、スコア表示)を初期化します。プレイヤー1のヘルスバーは画面の左上に、プレイヤー2のヘルスバーは画面の右上に表示されます。
     """
     # Player 1's health bar at the top-left corner
-    hp_bar1 = HealthBar(10, 10, 100, 100)  # x, y, width, max
+    hp_bar1 = HealthBar(10, 10, 100, 1000)  # x, y, width, max
 
     # Player 2's health bar at the top-right corner
     # Adjust the x-coordinate to place it on the right (WIDTH - width of the bar - some margin)
-    hp_bar2 = HealthBar(WIDTH - 200, 10, 100, 100)  # x, y, width, max
+    hp_bar2 = HealthBar(WIDTH - 200, 10, 100, 1000)  # x, y, width, max
 
     score = Score()
     score2 = Scores()
@@ -642,19 +642,11 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     for lightning in lightnings:
         if ship1.rect.colliderect(lightning.rect):
             explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
-            ex = tmr
-            hp_bar1.decrease(30)
-            if ex == tmr + 2:
-                lightnings.remove(lightning)
+            hp_bar1.decrease(10)
 
         if ship2.rect.colliderect(lightning.rect):
             explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
-            ex = tmr
-            hp_bar2.decrease(30)
-            if ex == tmr + 2:
-                lightnings.remove(lightning)
-        
-
+            hp_bar2.decrease(10)
 
 def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score, score2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2):
     """
