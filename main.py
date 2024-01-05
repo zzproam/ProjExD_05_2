@@ -481,7 +481,7 @@ def main():
     clock = pg.time.Clock()
     tmr = 0
     while True:
-        handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
+        bg_x, bg_x_flipped = handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
         key_states = pg.key.get_pressed()  # Get the current state of the keyboard
         handle_events(pg.event.get(), key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2)
 
@@ -590,7 +590,7 @@ def initialize_background():
     bg_x_flipped = bg_img.get_width()
     bg_tile_width = bg_img.get_width()
     bg_tile_height = bg_img.get_height()
-    tiles_x = -(-WIDTH // bg_tile_width)
+    tiles_x = -(-WIDTH // bg_tile_width) + 1
     tiles_y = -(-HEIGHT // bg_tile_height)
     return bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y
 
@@ -691,6 +691,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
         elif ship2.rect.colliderect(fuel.rect):
             score_display2.update_score(score_display2.score + 20)  
             fuel.kill()
+
 
 def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2):
     """
