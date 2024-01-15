@@ -23,10 +23,10 @@ move_image_paths = {
 
 
 def restrict_ship_movement(ship, ship_num):
-    # 異なる船の境界を定義する辞書
+    # 船1と船2の境界を定義する辞書
     ship_bounds = {
-        1: (0, 0, WIDTH, 400),   # 船1の境界：(左、上、右、下)
-        2: (0, 500, WIDTH, HEIGHT)  # 船2の境界：(左、上、右、下)
+        1: (0, 0, WIDTH, HEIGHT),   # 船1の境界：(左、上、右、下)
+        2: (0, 0, WIDTH, HEIGHT)  # 船2の境界：(左、上、右、下)
     }
 
     # ship_numに基づいて船の境界を取得；見つからない場合はデフォルト値を使用
@@ -38,7 +38,6 @@ def restrict_ship_movement(ship, ship_num):
     ship.rect.top = max(min_y, min(ship.rect.top, max_y))
     ship.rect.right = min(max_x, max(ship.rect.right, min_x))
     ship.rect.bottom = min(max_y, max(ship.rect.bottom, min_y))
-
 
 class Explosion(pg.sprite.Sprite):
     """
