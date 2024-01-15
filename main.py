@@ -214,7 +214,6 @@ class Ship(pg.sprite.Sprite):
         self.current_frame = 0
         self.animation_speed = 0.2
         self.image = self.images[self.current_frame]
-
         self.rect = self.image.get_rect(center=xy)
 
         hitbox_offset = 0.45
@@ -546,7 +545,7 @@ def main():
             bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
         key_states = pg.key.get_pressed()  # Get the current state of the keyboard
         handle_events(pg.event.get(), key_states, ships, bullets, lightnings,
-                      ship1_blink, ship2_blink, score_display1, score_display2)
+                      ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2)
 
         update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr,
                                          score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
@@ -564,7 +563,6 @@ def main():
 
     pg.time.delay(3000)
     pg.quit()
-
 
 def initialize_screen():
     """
@@ -699,7 +697,7 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     return bg_x, bg_x_flipped
 
 
-def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2):
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2):
     """
     キーボードやマウスなどのユーザー入力イベントを処理します。
     """
@@ -712,26 +710,27 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             pg.quit()
             sys.exit()
         elif event.type == pg.KEYDOWN:
-            # add bullet for ship1
+            # use bullet player1 : press down, player2 : press up
             if event.key == pg.K_RIGHTBRACKET:
                 if ship1:
                     bullets.add(Bullet(ship1, "down"))
-            # add bullet for ship2
             elif event.key == pg.K_g:
                 if ship2:
                     bullets.add(Bullet(ship2, "up"))
-            # add lightning for ship1
+            # add lightning for ship1 and ship2
             elif event.key == pg.K_LEFTBRACKET:
-                lightnings.add(Lightning(ship1, "down"))
-            # add lightning for ship2
+                if fuel_bar1.fuel > 0:
+                    lightnings.add(Lightning(ship1, "down"))
+                    fuel_bar1.decrease(10)  # Decrease fuel for ship1
             elif event.key == pg.K_h:
-                lightnings.add(Lightning(ship2, "up"))
+                if fuel_bar2.fuel > 0:
+                    lightnings.add(Lightning(ship2, "up"))
+                    fuel_bar2.decrease(10)
             # blinking for ship2
             elif event.key == pg.K_LSHIFT:
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
                 if not ship2.blinking:
                     ship2_blink.start_blink(direction, score_display2)
-            # blinking for ship1
             elif event.key == pg.K_RSHIFT:
                 direction = (-1, 0) if key_states[pg.K_LEFT] else (1, 0)
                 if not ship1.blinking:
@@ -766,7 +765,6 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
                 # Create an explosion at ship2's location
                 explosion2s.add(Explosion2(ship1.rect.center))
                 hp_bar1.decrease(10)
-
     if ship2:
         for lightning in lightnings:
             if ship2.hitbox.colliderect(lightning.rect):
@@ -881,11 +879,15 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
     # Access ship1 and ship2 from the ships group
     for ship in ships:
         if ship.ship_num == 1 and ship.alive() and key_states[pg.K_RETURN]:
-            ship1_shield.update(screen)
-            screen.blit(ship1_shield.image, ship1_shield.rect)
+            if fuel_bar1.fuel >0:
+                ship1_shield.update(screen)
+                screen.blit(ship1_shield.image, ship1_shield.rect)
+                fuel_bar1.decrease(0.5)
         elif ship.ship_num == 2 and ship.alive() and key_states[pg.K_TAB]:
-            ship2_shield.update(screen)
-            screen.blit(ship2_shield.image, ship2_shield.rect)
+            if fuel_bar2.fuel >0:
+                ship2_shield.update(screen)
+                screen.blit(ship2_shield.image, ship2_shield.rect)
+                fuel_bar2.decrease(0.5)
         # Draw the rect for testing purposes
         # Use a bright color like red and set the width to 1 or 2 pixels
         pg.draw.rect(screen, (255, 0, 0), ship.hitbox, 1)
@@ -906,7 +908,6 @@ def display_end_game_result(screen, hp_bar1, hp_bar2):
     pg.display.flip()  # Update the display to show the result
 
 # Other necessary functions...
-
 
 if __name__ == "__main__":
     pg.init()
