@@ -212,6 +212,7 @@ class Ship(pg.sprite.Sprite):
         self.current_frame = 0
         self.animation_speed = 0.2
         self.image = self.images[self.current_frame]
+        
         self.rect = self.image.get_rect(center=xy)
         self.speed = 10
         self.moving = False  # Indicates whether the ship is moving
@@ -477,21 +478,28 @@ def main():
     birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2 = initialize_sprites()
     hp_bar1, hp_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
-
+    game_over = False
     clock = pg.time.Clock()
     tmr = 0
-    while True:
+    while not game_over:
         bg_x, bg_x_flipped = handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
         key_states = pg.key.get_pressed()  # Get the current state of the keyboard
         handle_events(pg.event.get(), key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2)
 
-        update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2)
+        update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2)
 
         draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states)
+        # game over 処理
+        if update_state:
+            display_end_game_result(screen, hp_bar1, hp_bar2)
+            break
 
         pg.display.update()
         tmr += 1
         clock.tick(50)
+
+    pg.time.delay(3000)
+    pg.quit()
   
 
 def initialize_screen():
@@ -674,21 +682,24 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             hp_bar2.decrease(10)
 
     # lightning and ship Collision
-    for lightning in lightnings:
-        if ship1.rect.colliderect(lightning.rect):
-            explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
-            hp_bar1.decrease(10)
+    if ship1:
+        for lightning in lightnings:
+            if ship1.rect.colliderect(lightning.rect):
+                explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
+                hp_bar1.decrease(10)
 
-        if ship2.rect.colliderect(lightning.rect):
-            explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
-            hp_bar2.decrease(10)
+    if ship2:
+        for lightning in lightnings:
+            if ship2.rect.colliderect(lightning.rect):
+                explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
+                hp_bar2.decrease(10)
 
     # Check for fuel collection and update scores
     for fuel in list(fuels):
-        if ship1.rect.colliderect(fuel.rect):
+        if ship1 and ship1.rect.colliderect(fuel.rect):
             score_display1.update_score(score_display1.score + 20)  
             fuel.kill()
-        elif ship2.rect.colliderect(fuel.rect):
+        elif ship2 and ship2.rect.colliderect(fuel.rect):
             score_display2.update_score(score_display2.score + 20)  
             fuel.kill()
 
@@ -752,6 +763,16 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
         if explosion.animation_done:
              explosion2s.remove(explosion)
     
+    # Check if either player is "dead"
+    if hp_bar1.hp <= 0 or hp_bar2.hp <= 0:
+        if hp_bar1.hp <= 0 and ship1.alive():
+            ship1.kill()
+        if hp_bar2.hp <= 0 and ship2.alive():
+            ship2.kill()
+        return True  # Indicate game should end
+
+    return False
+    
 
 def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states):
     """
@@ -783,6 +804,19 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
             ship2_shield.update(screen)
             screen.blit(ship2_shield.image, ship2_shield.rect)
     
+
+def display_end_game_result(screen, hp_bar1, hp_bar2):
+    """
+    Displays the end game result on the screen.
+    """
+    font = pg.font.Font(None, 74)  # Choose an appropriate font and size
+    if hp_bar1.hp <= 0:
+        text = font.render("Player 2 Wins!", True, (255, 0, 0))
+    elif hp_bar2.hp <= 0:
+        text = font.render("Player 1 Wins!", True, (0, 255, 0))
+
+    screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+    pg.display.flip()  # Update the display to show the result
 
 # Other necessary functions...
 
