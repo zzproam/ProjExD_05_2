@@ -855,7 +855,7 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                 print("1")
 
 
-def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
+def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2, slime_for_ship1, slime_for_ship2):
     """
     スプライト間の衝突を検出し、それに応じた処理を行います。
     """
@@ -899,6 +899,17 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
         elif ship2 and ship2.rect.colliderect(fuel.rect):
             score_display2.update_score(score_display2.score + 20)
             fuel.kill()
+
+    for slime in slime_for_ship1:
+        for projectile in slime.projectiles:
+            if ship2.rect.colliderect(projectile.rect):
+                hp_bar2.decrease(50)  # Decrease HP for ship2
+                projectile.kill()
+    for slime in slime_for_ship2:
+        for projectile in slime.projectiles:
+            if ship1.rect.colliderect(projectile.rect):
+                hp_bar1.decrease(50)  # Decrease HP for ship2
+                projectile.kill()
 
 
 def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2, slime_for_ship1, slime_for_ship2):
@@ -945,7 +956,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
 
     # Check collisions and interactions
     handle_collisions(ships, bullets, lightnings, explosion2s, explosions,
-                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
+                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2, slime_for_ship1, slime_for_ship2)
 
     # Blinking updates
     if ship1.alive():
