@@ -108,14 +108,9 @@ class Blink(pg.sprite.Sprite):
             self.image = self.frames[int(self.current_frame)]
             self.rect = self.image.get_rect(center=self.ship.rect.center)
 
-    def start_blink(self, direction, score_display):
-        if score_display.score >= 20:
-            self.active = True
-            self.ship.blinking = True  # Tell the ship it's blinking
-            score_display.update_score(score_display.score - 20)
-        else:
-            print("not enough fuel to blink!")
-
+    def start_blink(self, direction):
+        self.active = True
+        self.ship.blinking = True  # Tell the ship it's blinking
         self.ship.blink_direction = direction
         self.current_frame = 0  # Reset animation frame
 
@@ -534,7 +529,7 @@ def main():
     この関数はゲームのメインループを含んでいます。画面の初期化、スプライトの作成、UI要素の設定、背景の初期化などのゲームの主要な部分がこの関数で実行されます。
     """
     screen = initialize_screen()
-    birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2 = initialize_sprites()
+    birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield = initialize_sprites()
     hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
     game_over = False
@@ -545,13 +540,13 @@ def main():
             bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
         key_states = pg.key.get_pressed()  # Get the current state of the keyboard
         handle_events(pg.event.get(), key_states, ships, bullets, lightnings,
-                      ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2)
+                      ship1_blink, ship2_blink, fuel_bar1, fuel_bar2)
 
         update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr,
-                                         score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
+                                          ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
         draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels,
-                        hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2)
+                        hp_bar1, hp_bar2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2)
         # game over 処理
         if update_state:
             display_end_game_result(screen, hp_bar1, hp_bar2)
@@ -634,13 +629,8 @@ def initialize_sprites():
     explosions = pg.sprite.Group()
     explosion2s = pg.sprite.Group()
     fuels = pg.sprite.Group()
-
-    # Score displays for each ship
-    score_display1 = ScoreDisplay(1, 80, HEIGHT - (HEIGHT-50))
-    score_display2 = ScoreDisplay(2, 1500, HEIGHT - (HEIGHT-50))
-
     # Update the return statement to include these new instances
-    return birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2
+    return birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield
 
 
 def initialize_ui_elements():
@@ -697,7 +687,7 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     return bg_x, bg_x_flipped
 
 
-def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2):
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, fuel_bar1, fuel_bar2):
     """
     キーボードやマウスなどのユーザー入力イベントを処理します。
     """
@@ -730,14 +720,18 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             elif event.key == pg.K_LSHIFT:
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
                 if not ship2.blinking:
-                    ship2_blink.start_blink(direction, score_display2)
+                    if fuel_bar2.fuel > 0:
+                        ship2_blink.start_blink(direction)
+                        fuel_bar2.decrease(30)
             elif event.key == pg.K_RSHIFT:
                 direction = (-1, 0) if key_states[pg.K_LEFT] else (1, 0)
                 if not ship1.blinking:
-                    ship1_blink.start_blink(direction, score_display1)
+                    if fuel_bar1.fuel > 0:
+                        ship1_blink.start_blink(direction)
+                        fuel_bar1.decrease(20)
 
 
-def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
+def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     スプライト間の衝突を検出し、それに応じた処理を行います。
     """
@@ -775,14 +769,15 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     # Check for fuel collection and update scores
     for fuel in list(fuels):
         if ship1 and ship1.rect.colliderect(fuel.rect):
-            score_display1.update_score(score_display1.score + 20)
+            # increase fuel
+            fuel_bar1.increase(10)
             fuel.kill()
         elif ship2 and ship2.rect.colliderect(fuel.rect):
-            score_display2.update_score(score_display2.score + 20)
+            fuel_bar2.increase(10)
             fuel.kill()
 
 
-def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
+def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     ゲームの状態を更新します。スプライトの移動、アニメーションの更新などが含まれます。
     """
@@ -824,7 +819,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
 
     # Check collisions and interactions
     handle_collisions(ships, bullets, lightnings, explosion2s, explosions,
-                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
+                      fuels, tmr, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
     # Blinking updates
     if ship1.alive():
@@ -853,7 +848,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
     return False
 
 
-def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2):
+def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2):
     """
     ゲームの現在の状態を画面に描画します。
     """
@@ -865,14 +860,10 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
     explosions.draw(screen)
     birds.draw(screen)
     fuels.draw(screen)
-    score_display1.draw(screen)
-    score_display2.draw(screen)
 
     # Draw UI elements
     hp_bar1.draw(screen)
     hp_bar2.draw(screen)
-    score_display1.update(screen)
-    score_display2.update(screen)
     fuel_bar1.draw(screen)
     fuel_bar2.draw(screen)
 
