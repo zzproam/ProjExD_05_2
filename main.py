@@ -30,7 +30,8 @@ def restrict_ship_movement(ship, ship_num):
     }
 
     # ship_numに基づいて船の境界を取得；見つからない場合はデフォルト値を使用
-    min_x, min_y, max_x, max_y = ship_bounds.get(ship_num, (0, 0, WIDTH, HEIGHT))
+    min_x, min_y, max_x, max_y = ship_bounds.get(
+        ship_num, (0, 0, WIDTH, HEIGHT))
 
     # 船の左、上、右、下の位置が境界内にあることを確認
     ship.rect.left = max(min_x, min(ship.rect.left, max_x))
@@ -39,10 +40,11 @@ def restrict_ship_movement(ship, ship_num):
     ship.rect.bottom = min(max_y, max(ship.rect.bottom, min_y))
 
 
-class Explosion(pg.sprite.Sprite): 
+class Explosion(pg.sprite.Sprite):
     """
     キャラクターが死んだ時に爆発アニメーションを起動する
     """
+
     def __init__(self, center, size=(100, 100)):
         super().__init__()
         # 爆発画像のリストを初期化
@@ -60,16 +62,16 @@ class Explosion(pg.sprite.Sprite):
         # アニメーションの速度を設定
         self.animation_speed = 1
         # アニメーションの総フレーム数を設定
-        self.total_frames = 10 * 5  
+        self.total_frames = 10 * 5
 
     def load_images(self):
         # 爆発画像を読み込む
-        for i in range(1, 11):  
+        for i in range(1, 11):
             # 各爆発画像を読み込む
             img = pg.image.load(
                 f'{MAIN_DIR}/fig/Explosion_{i}.png').convert_alpha()
             # 画像のサイズを調整
-            img = pg.transform.scale(img, (100, 100))  
+            img = pg.transform.scale(img, (100, 100))
             # 画像をリストに追加
             self.images.append(img)
 
@@ -84,7 +86,7 @@ class Explosion(pg.sprite.Sprite):
             self.frame_count += 1
         else:
             # アニメーションが終了したら、スプライトを削除
-            self.kill()  
+            self.kill()
 
 
 class Blink(pg.sprite.Sprite):
@@ -212,7 +214,6 @@ class Ship(pg.sprite.Sprite):
         self.current_frame = 0
         self.animation_speed = 0.2
         self.image = self.images[self.current_frame]
-        
         self.rect = self.image.get_rect(center=xy)
 
         hitbox_offset = 0.45
@@ -220,7 +221,6 @@ class Ship(pg.sprite.Sprite):
             self.rect.width * (hitbox_offset - 1),
             self.rect.height * (hitbox_offset - 1)
         )
-
 
         self.speed = 10
         self.moving = False  # Indicates whether the ship is moving
@@ -337,7 +337,8 @@ class Shield(pg.sprite.Sprite):
             self.animate()
             screen.blit(self.image, self.rect)
         else:
-            pg.draw.circle(screen, self.color, self.ship.rect.center, self.radius, self.width)
+            pg.draw.circle(screen, self.color,
+                           self.ship.rect.center, self.radius, self.width)
 
 
 class Bullet(pg.sprite.Sprite):
@@ -355,7 +356,8 @@ class Bullet(pg.sprite.Sprite):
         elif direction == "down":
             self.vx, self.vy = (0, 1)
         else:
-            raise ValueError("Invalid direction for bullet. Choose 'up' or 'down'.")
+            raise ValueError(
+                "Invalid direction for bullet. Choose 'up' or 'down'.")
 
     def update(self):
         self.rect.move_ip(self.speed * self.vx, self.speed * self.vy)
@@ -378,7 +380,8 @@ class Lightning(pg.sprite.Sprite):
         elif direction == "down":
             self.rect.top = ship.rect.bottom
         else:
-            raise ValueError("Invalid direction for lightning. Choose 'up' or 'down'.")
+            raise ValueError(
+                "Invalid direction for lightning. Choose 'up' or 'down'.")
 
         self.animation_done = False
 
@@ -387,8 +390,10 @@ class Lightning(pg.sprite.Sprite):
         self.images = []
 
         for img in imgs:
-            image = pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)).convert_alpha()
-            image = pg.transform.scale(image, (image.get_width() * 2, image.get_height() * 2))
+            image = pg.image.load(os.path.join(
+                f"{MAIN_DIR}/Lightning", img)).convert_alpha()
+            image = pg.transform.scale(
+                image, (image.get_width() * 2, image.get_height() * 2))
 
             # Flip the image for upward direction
             if direction == "up":
@@ -406,7 +411,8 @@ class Lightning(pg.sprite.Sprite):
 class Explosion2(pg.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
-        self.images = [pg.image.load(f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
+        self.images = [pg.image.load(
+            f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
         self.current_frame = 0
         self.image = self.images[self.current_frame]  # Set the initial image
         self.rect = self.image.get_rect(center=position)
@@ -420,7 +426,7 @@ class Explosion2(pg.sprite.Sprite):
         else:
             self.animation_done = True  # End the animation once all frames have been shown
 
-            
+
 class HealthBar():
     def __init__(self, x, y, width, max_hp):
         self.x = x
@@ -432,9 +438,12 @@ class HealthBar():
 
         self.font = pg.font.Font(None, 32)
         self.label = self.font.render("HP", True, (255, 255, 255))
-        self.frame = pg.Rect(self.x + 2 + self.label.get_width(), self.y, self.width, self.label.get_height())
-        self.bar = pg.Rect(self.x + 4 + self.label.get_width(), self.y + 2, self.width - 4, self.label.get_height() - 4)
-        self.value = pg.Rect(self.x + 4 + self.label.get_width(), self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.frame = pg.Rect(self.x + 2 + self.label.get_width(),
+                             self.y, self.width, self.label.get_height())
+        self.bar = pg.Rect(self.x + 4 + self.label.get_width(),
+                           self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.value = pg.Rect(self.x + 4 + self.label.get_width(),
+                             self.y + 2, self.width - 4, self.label.get_height() - 4)
         self.effect_color = (0, 255, 0)  # Green color for the health bar
 
     def decrease(self, amount):
@@ -455,9 +464,10 @@ class HealthBar():
 class Fuel(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.transform.rotozoom(pg.image.load(f"{MAIN_DIR}/imgs/123.jpg"), 0, 0.08)
+        self.image = pg.transform.rotozoom(
+            pg.image.load(f"{MAIN_DIR}/imgs/123.jpg"), 0, 0.08)
         self.rect = self.image.get_rect()
-        self.rect.center = random.randint(0, WIDTH), random.choice([200,500])
+        self.rect.center = random.randint(0, WIDTH), random.choice([200, 500])
 
 
 class ScoreDisplay(pg.sprite.Sprite):
@@ -467,16 +477,56 @@ class ScoreDisplay(pg.sprite.Sprite):
         self.font = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
         self.txt_color = (0, 0, 255)
         self.score = 20
-        self.img = self.font.render(f"Ship{self.ship_number}fuel:{self.score}", 0, self.txt_color)
+        self.img = self.font.render(
+            f"Ship{self.ship_number}fuel:{self.score}", 0, self.txt_color)
         self.rect = self.img.get_rect()
         self.rect.center = (start_x, start_y)
 
     def update_score(self, new_score):
         self.score = new_score
-        self.img = self.font.render(f"Ship{self.ship_number}fuel:{self.score}", 0, self.txt_color)
+        self.img = self.font.render(
+            f"Ship{self.ship_number}fuel:{self.score}", 0, self.txt_color)
 
     def draw(self, screen):
         screen.blit(self.img, self.rect)
+
+
+class FuelBar():
+    def __init__(self, x, y, width, max_fuel):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.max_fuel = max_fuel  # Set the maximum fuel
+        self.fuel = max_fuel
+        self.mark = self.width / self.max_fuel  # Calculate the width of each fuel unit
+
+        self.font = pg.font.Font(None, 32)
+        self.label = self.font.render("Fuel", True, (255, 255, 255))
+        self.frame = pg.Rect(self.x + 2 + self.label.get_width(),
+                             self.y, self.width, self.label.get_height())
+        self.bar = pg.Rect(self.x + 4 + self.label.get_width(),
+                           self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.value = pg.Rect(self.x + 4 + self.label.get_width(),
+                             self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.effect_color = (255, 255, 0)  # Yellow color for the fuel bar
+
+    def decrease(self, amount):
+        self.fuel = max(self.fuel - amount, 0)
+        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
+
+    def increase(self, amount):
+        self.fuel = min(self.fuel + amount, self.max_fuel)
+        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
+
+    def update(self):
+        # Additional logic (if any) for updating the fuel bar
+        pass
+
+    def draw(self, screen):
+        pg.draw.rect(screen, (255, 255, 255), self.frame)
+        pg.draw.rect(screen, (0, 0, 0), self.bar)
+        pg.draw.rect(screen, self.effect_color, self.value)
+        screen.blit(self.label, (self.x, self.y))
 
 
 def main():
@@ -485,19 +535,23 @@ def main():
     """
     screen = initialize_screen()
     birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2 = initialize_sprites()
-    hp_bar1, hp_bar2 = initialize_ui_elements()
+    hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
     game_over = False
     clock = pg.time.Clock()
     tmr = 0
     while not game_over:
-        bg_x, bg_x_flipped = handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
+        bg_x, bg_x_flipped = handle_background_movement(
+            bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y, screen, bg_img, bg_img_flipped)
         key_states = pg.key.get_pressed()  # Get the current state of the keyboard
-        handle_events(pg.event.get(), key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2)
+        handle_events(pg.event.get(), key_states, ships, bullets, lightnings,
+                      ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2)
 
-        update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2)
+        update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr,
+                                         score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
-        draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states)
+        draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels,
+                        hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2)
         # game over 処理
         if update_state:
             display_end_game_result(screen, hp_bar1, hp_bar2)
@@ -509,7 +563,6 @@ def main():
 
     pg.time.delay(3000)
     pg.quit()
-  
 
 def initialize_screen():
     """
@@ -525,23 +578,26 @@ def initialize_sprites():
     ゲームで使用するスプライト（キャラクターやオブジェクト）を初期化します。
     """
     bird_image_path = os.path.join(MAIN_DIR, 'fig/Walk.png')  # 鳥のスプライト画像のパス。
-    birds = pg.sprite.Group()  #  鳥のスプライトを格納するグループ。
+    birds = pg.sprite.Group()  # 鳥のスプライトを格納するグループ。
     for _ in range(5):
         x = random.randint(0, WIDTH)
         y = random.randint(0, HEIGHT)
         speed_x = random.choice([1, 2, 3])
         speed_y = random.choice([-3, -2, -1, 1, 2, 3])
-        bird = Bird(bird_image_path, (x, y), frame_count=6, speed=(speed_x, speed_y))
+        bird = Bird(bird_image_path, (x, y), frame_count=6,
+                    speed=(speed_x, speed_y))
         birds.add(bird)
 
-    ship1_frame_count_idle = 10  
-    ship1_frame_count_move = 10  
-    ship2_frame_count_idle = 10  
-    ship2_frame_count_move = 10  
+    ship1_frame_count_idle = 20
+    ship1_frame_count_move = 20
+    ship2_frame_count_idle = 27
+    ship2_frame_count_move = 27
 
     # 2つの船のスプライト。
-    ship1 = Ship(1, (100, 200), ship1_frame_count_idle, ship1_frame_count_move, ship_num=1, new_size=(150, 150))
-    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle, ship2_frame_count_move, ship_num=2, new_size=(150, 150))
+    ship1 = Ship(1, (100, 200), ship1_frame_count_idle,
+                 ship1_frame_count_move, ship_num=1, new_size=(150, 150))
+    ship2 = Ship(2, (1000, 500), ship2_frame_count_idle,
+                 ship2_frame_count_move, ship_num=2, new_size=(150, 150))
 
     shield1_sprite_path = os.path.join(MAIN_DIR, 'fig/shield1.png')
     shield1_frame_count = 8  # The number of frames in the shield1 sprite sheet
@@ -549,14 +605,20 @@ def initialize_sprites():
     shield2_frame_count = 7  # The number of frames in the shield2 sprite sheet
 
     # Add these lines after creating ship1 and ship2 in initialize_sprites
-    ship1_shield = Shield(ship1, shield1_sprite_path , shield1_frame_count, new_size=(300, 300))
-    ship2_shield = Shield(ship2, shield2_sprite_path , shield2_frame_count, new_size=(300, 300))
+    ship1_shield = Shield(ship1, shield1_sprite_path,
+                          shield1_frame_count, new_size=(300, 300))
+    ship2_shield = Shield(ship2, shield2_sprite_path,
+                          shield2_frame_count, new_size=(300, 300))
 
-    blink_frame_count_ship1 = 8  # Replace with the correct number of blink frames for ship1
-    blink_frame_count_ship2 = 8  # Replace with the correct number of blink frames for ship2
+    # Replace with the correct number of blink frames for ship1
+    blink_frame_count_ship1 = 8
+    # Replace with the correct number of blink frames for ship2
+    blink_frame_count_ship2 = 8
 
-    blink_image_path_ship1 = os.path.join(MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
-    blink_image_path_ship2 = os.path.join(MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
+    blink_image_path_ship1 = os.path.join(
+        MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
+    blink_image_path_ship2 = os.path.join(
+        MAIN_DIR, 'fig/blink.png')  # Replace with the correct path
 
     # Instantiate Blink objects
     ship1_blink = Blink(ship1, blink_image_path_ship1, blink_frame_count_ship1)
@@ -591,8 +653,10 @@ def initialize_ui_elements():
     # Player 2's health bar at the top-right corner
     # Adjust the x-coordinate to place it on the right (WIDTH - width of the bar - some margin)
     hp_bar2 = HealthBar(WIDTH - 200, 10, 100, 1000)  # x, y, width, max
+    fuel_bar1 = FuelBar(10, 50, 100, 100)  # Position it below hp_bar1
+    fuel_bar2 = FuelBar(WIDTH - 200, 50, 100, 100)  # Position it below hp_bar2
 
-    return hp_bar1, hp_bar2
+    return hp_bar1, hp_bar2, fuel_bar1, fuel_bar2
 
 
 def initialize_background():
@@ -627,12 +691,13 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     for y in range(tiles_y):
         for x in range(tiles_x):
             screen.blit(bg_img, (x * bg_tile_width + bg_x, y * bg_tile_height))
-            screen.blit(bg_img_flipped, (x * bg_tile_width + bg_x_flipped, y * bg_tile_height))
+            screen.blit(bg_img_flipped, (x * bg_tile_width +
+                        bg_x_flipped, y * bg_tile_height))
 
     return bg_x, bg_x_flipped
 
 
-def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2):
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2, fuel_bar1, fuel_bar2):
     """
     キーボードやマウスなどのユーザー入力イベントを処理します。
     """
@@ -645,33 +710,34 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             pg.quit()
             sys.exit()
         elif event.type == pg.KEYDOWN:
-            # add bullet for ship1
+            # use bullet player1 : press down, player2 : press up
             if event.key == pg.K_RIGHTBRACKET:
                 if ship1:
                     bullets.add(Bullet(ship1, "down"))
-            # add bullet for ship2
             elif event.key == pg.K_g:
                 if ship2:
                     bullets.add(Bullet(ship2, "up"))
-            # add lightning for ship1         
+            # add lightning for ship1 and ship2
             elif event.key == pg.K_LEFTBRACKET:
-                lightnings.add(Lightning(ship1, "down"))
-            # add lightning for ship2
+                if fuel_bar1.fuel > 0:
+                    lightnings.add(Lightning(ship1, "down"))
+                    fuel_bar1.decrease(10)  # Decrease fuel for ship1
             elif event.key == pg.K_h:
-                lightnings.add(Lightning(ship2, "up"))
+                if fuel_bar2.fuel > 0:
+                    lightnings.add(Lightning(ship2, "up"))
+                    fuel_bar2.decrease(10)
             # blinking for ship2
             elif event.key == pg.K_LSHIFT:
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
                 if not ship2.blinking:
                     ship2_blink.start_blink(direction, score_display2)
-            # blinking for ship1
             elif event.key == pg.K_RSHIFT:
                 direction = (-1, 0) if key_states[pg.K_LEFT] else (1, 0)
                 if not ship1.blinking:
                     ship1_blink.start_blink(direction, score_display1)
 
-            
-def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2):
+
+def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     スプライト間の衝突を検出し、それに応じた処理を行います。
     """
@@ -685,6 +751,8 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
+            fuel_bar1.decrease(10)  # Decrease fuel for ship1
+            fuel_bar2.decrease(10)  # Decrease fuel for ship2
         elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
@@ -694,26 +762,27 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     if ship1:
         for lightning in lightnings:
             if ship1.hitbox.colliderect(lightning):
-                explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
+                # Create an explosion at ship2's location
+                explosion2s.add(Explosion2(ship1.rect.center))
                 hp_bar1.decrease(10)
-
     if ship2:
         for lightning in lightnings:
             if ship2.hitbox.colliderect(lightning.rect):
-                explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
+                # Create an explosion at ship2's location
+                explosion2s.add(Explosion2(ship2.rect.center))
                 hp_bar2.decrease(10)
 
     # Check for fuel collection and update scores
     for fuel in list(fuels):
         if ship1 and ship1.rect.colliderect(fuel.rect):
-            score_display1.update_score(score_display1.score + 20)  
+            score_display1.update_score(score_display1.score + 20)
             fuel.kill()
         elif ship2 and ship2.rect.colliderect(fuel.rect):
-            score_display2.update_score(score_display2.score + 20)  
+            score_display2.update_score(score_display2.score + 20)
             fuel.kill()
 
 
-def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2):
+def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     ゲームの状態を更新します。スプライトの移動、アニメーションの更新などが含まれます。
     """
@@ -738,7 +807,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
             ship.update(key_states, ship1_controls, screen)
         elif ship.ship_num == 2:
             ship.update(key_states, ship2_controls, screen)
-    
+
      # Add fuel sprites periodically
     if tmr % 300 == 0:  # Adjust the frequency as needed
         fuel = Fuel()
@@ -754,7 +823,8 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
     hp_bar2.update()
 
     # Check collisions and interactions
-    handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2)   
+    handle_collisions(ships, bullets, lightnings, explosion2s, explosions,
+                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
     # Blinking updates
     if ship1.alive():
@@ -770,8 +840,8 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
     # remove explosion2s if the animation is done
     for explosion in list(explosion2s):
         if explosion.animation_done:
-             explosion2s.remove(explosion)
-    
+            explosion2s.remove(explosion)
+
     # Check if either player is "dead"
     if hp_bar1.hp <= 0 or hp_bar2.hp <= 0:
         if hp_bar1.hp <= 0 and ship1.alive():
@@ -781,9 +851,9 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
         return True  # Indicate game should end
 
     return False
-    
 
-def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states):
+
+def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2):
     """
     ゲームの現在の状態を画面に描画します。
     """
@@ -803,19 +873,25 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
     hp_bar2.draw(screen)
     score_display1.update(screen)
     score_display2.update(screen)
+    fuel_bar1.draw(screen)
+    fuel_bar2.draw(screen)
 
     # Access ship1 and ship2 from the ships group
     for ship in ships:
         if ship.ship_num == 1 and ship.alive() and key_states[pg.K_RETURN]:
-            ship1_shield.update(screen)
-            screen.blit(ship1_shield.image, ship1_shield.rect)
+            if fuel_bar1.fuel >0:
+                ship1_shield.update(screen)
+                screen.blit(ship1_shield.image, ship1_shield.rect)
+                fuel_bar1.decrease(0.5)
         elif ship.ship_num == 2 and ship.alive() and key_states[pg.K_TAB]:
-            ship2_shield.update(screen)
-            screen.blit(ship2_shield.image, ship2_shield.rect)
+            if fuel_bar2.fuel >0:
+                ship2_shield.update(screen)
+                screen.blit(ship2_shield.image, ship2_shield.rect)
+                fuel_bar2.decrease(0.5)
         # Draw the rect for testing purposes
         # Use a bright color like red and set the width to 1 or 2 pixels
-        pg.draw.rect(screen, (255, 0, 0), ship.hitbox, 1)    
-    
+        pg.draw.rect(screen, (255, 0, 0), ship.hitbox, 1)
+
 
 def display_end_game_result(screen, hp_bar1, hp_bar2):
     """
@@ -827,7 +903,8 @@ def display_end_game_result(screen, hp_bar1, hp_bar2):
     elif hp_bar2.hp <= 0:
         text = font.render("Player 1 Wins!", True, (0, 255, 0))
 
-    screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
+    screen.blit(text, (WIDTH // 2 - text.get_width() //
+                2, HEIGHT // 2 - text.get_height() // 2))
     pg.display.flip()  # Update the display to show the result
 
 # Other necessary functions...
@@ -845,7 +922,3 @@ if __name__ == "__main__":
     main()
     pg.quit()
     sys.exit()
-    
-
-
-
