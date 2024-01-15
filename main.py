@@ -492,13 +492,51 @@ class ScoreDisplay(pg.sprite.Sprite):
         screen.blit(self.img, self.rect)
 
 
+class FuelBar():
+    def __init__(self, x, y, width, max_fuel):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.max_fuel = max_fuel  # Set the maximum fuel
+        self.fuel = max_fuel
+        self.mark = self.width / self.max_fuel  # Calculate the width of each fuel unit
+
+        self.font = pg.font.Font(None, 32)
+        self.label = self.font.render("Fuel", True, (255, 255, 255))
+        self.frame = pg.Rect(self.x + 2 + self.label.get_width(),
+                             self.y, self.width, self.label.get_height())
+        self.bar = pg.Rect(self.x + 4 + self.label.get_width(),
+                           self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.value = pg.Rect(self.x + 4 + self.label.get_width(),
+                             self.y + 2, self.width - 4, self.label.get_height() - 4)
+        self.effect_color = (255, 255, 0)  # Yellow color for the fuel bar
+
+    def decrease(self, amount):
+        self.fuel = max(self.fuel - amount, 0)
+        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
+
+    def increase(self, amount):
+        self.fuel = min(self.fuel + amount, self.max_fuel)
+        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
+
+    def update(self):
+        # Additional logic (if any) for updating the fuel bar
+        pass
+
+    def draw(self, screen):
+        pg.draw.rect(screen, (255, 255, 255), self.frame)
+        pg.draw.rect(screen, (0, 0, 0), self.bar)
+        pg.draw.rect(screen, self.effect_color, self.value)
+        screen.blit(self.label, (self.x, self.y))
+
+
 def main():
     """
     この関数はゲームのメインループを含んでいます。画面の初期化、スプライトの作成、UI要素の設定、背景の初期化などのゲームの主要な部分がこの関数で実行されます。
     """
     screen = initialize_screen()
     birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2 = initialize_sprites()
-    hp_bar1, hp_bar2 = initialize_ui_elements()
+    hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
     game_over = False
     clock = pg.time.Clock()
@@ -511,10 +549,10 @@ def main():
                       ship1_blink, ship2_blink, score_display1, score_display2)
 
         update_state = update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr,
-                                         score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2)
+                                         score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
         draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels,
-                        hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states)
+                        hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2)
         # game over 処理
         if update_state:
             display_end_game_result(screen, hp_bar1, hp_bar2)
@@ -617,8 +655,10 @@ def initialize_ui_elements():
     # Player 2's health bar at the top-right corner
     # Adjust the x-coordinate to place it on the right (WIDTH - width of the bar - some margin)
     hp_bar2 = HealthBar(WIDTH - 200, 10, 100, 1000)  # x, y, width, max
+    fuel_bar1 = FuelBar(10, 50, 100, 100)  # Position it below hp_bar1
+    fuel_bar2 = FuelBar(WIDTH - 200, 50, 100, 100)  # Position it below hp_bar2
 
-    return hp_bar1, hp_bar2
+    return hp_bar1, hp_bar2, fuel_bar1, fuel_bar2
 
 
 def initialize_background():
@@ -698,7 +738,7 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                     ship1_blink.start_blink(direction, score_display1)
 
 
-def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2):
+def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     スプライト間の衝突を検出し、それに応じた処理を行います。
     """
@@ -712,6 +752,8 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
+            fuel_bar1.decrease(10)  # Decrease fuel for ship1
+            fuel_bar2.decrease(10)  # Decrease fuel for ship2
         elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
@@ -742,7 +784,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             fuel.kill()
 
 
-def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2):
+def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels, birds, tmr, score_display1, score_display2, ship1, ship2, ship1_blink, ship2_blink, key_states, screen, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2):
     """
     ゲームの状態を更新します。スプライトの移動、アニメーションの更新などが含まれます。
     """
@@ -784,7 +826,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
 
     # Check collisions and interactions
     handle_collisions(ships, bullets, lightnings, explosion2s, explosions,
-                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2)
+                      fuels, tmr, score_display1, score_display2, hp_bar1, hp_bar2, fuel_bar1, fuel_bar2)
 
     # Blinking updates
     if ship1.alive():
@@ -813,7 +855,7 @@ def update_game_state(ships, bullets, lightnings, explosion2s, explosions, fuels
     return False
 
 
-def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states):
+def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states, fuel_bar1, fuel_bar2):
     """
     ゲームの現在の状態を画面に描画します。
     """
@@ -833,6 +875,8 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
     hp_bar2.draw(screen)
     score_display1.update(screen)
     score_display2.update(screen)
+    fuel_bar1.draw(screen)
+    fuel_bar2.draw(screen)
 
     # Access ship1 and ship2 from the ships group
     for ship in ships:
