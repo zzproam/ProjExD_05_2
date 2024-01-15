@@ -530,12 +530,67 @@ class FuelBar():
         screen.blit(self.label, (self.x, self.y))
 
 
+class Slime(pg.sprite.Sprite):
+    def __init__(self, ship, opponent_ship, image_path, frame_count):
+        super().__init__()
+        self.ship = ship
+        self.opponent_ship = opponent_ship
+        self.frame_count = frame_count
+        self.spritesheet = pg.image.load(image_path).convert_alpha()
+        self.frames = self.load_frames(self.frame_count)
+        self.current_frame = 0
+        self.image = self.frames[self.current_frame]
+        self.rect = self.image.get_rect()
+        self.set_initial_position()
+        self.speed = 2  # Adjust the speed as needed
+        self.animation_speed = 0.1  # Adjust the animation speed as needed
+
+    def load_frames(self, frame_count):
+        # Extract frames from the spritesheet
+        frames = []
+        frame_width = self.spritesheet.get_width() // frame_count
+        frame_height = self.spritesheet.get_height()
+        for i in range(frame_count):
+            frame = self.spritesheet.subsurface(
+                (i * frame_width, 0, frame_width, frame_height))
+            frames.append(frame)
+        return frames
+
+    def set_initial_position(self):
+        # Position the slime randomly within a 30 unit range of the ship's position
+        offset_x = random.randint(-30, 30)
+        offset_y = random.randint(-30, 30)
+        self.rect.centerx = self.ship.rect.centerx + offset_x
+        self.rect.centery = self.ship.rect.centery + offset_y
+
+    def update(self):
+        # Move the slime towards the opponent's ship
+        direction_x = self.opponent_ship.rect.centerx - self.rect.centerx
+        direction_y = self.opponent_ship.rect.centery - self.rect.centery
+        distance = (direction_x**2 + direction_y**2)**0.5
+        if distance != 0:
+            direction_x /= distance
+            direction_y /= distance
+        self.rect.x += self.speed * direction_x
+        self.rect.y += self.speed * direction_y
+
+        # Update the animation
+        self.current_frame += self.animation_speed
+        if self.current_frame >= len(self.frames):
+            self.current_frame = 0
+        self.image = self.frames[int(self.current_frame)]
+
+    def draw(self, screen):
+        # Draw the slime on the screen
+        screen.blit(self.image, self.rect)
+
+
 def main():
     """
     この関数はゲームのメインループを含んでいます。画面の初期化、スプライトの作成、UI要素の設定、背景の初期化などのゲームの主要な部分がこの関数で実行されます。
     """
     screen = initialize_screen()
-    birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2 = initialize_sprites()
+    birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2, slime_ = initialize_sprites()
     hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
     game_over = False
@@ -641,8 +696,17 @@ def initialize_sprites():
     score_display1 = ScoreDisplay(1, 80, HEIGHT - (HEIGHT-50))
     score_display2 = ScoreDisplay(2, 1500, HEIGHT - (HEIGHT-50))
 
+    slimes = pg.sprite.Group()
+    frame_count = 10
+    # Replace with the correct path to the slime1 image
+    slime_image_path1 = f"{MAIN_DIR}/slime1.png"
+    slime_for_ship1 = Slime(ship1, ship2, slime_image_path1, frame_count)
+
+    # Replace with the correct path to the slime2 image
+    slime_image_path2 = f"{MAIN_DIR}/slime2.png"
+    slime_for_ship2 = Slime(ship2, ship1, slime_image_path2, frame_count)
     # Update the return statement to include these new instances
-    return birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2
+    return birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, score_display1, score_display2, slime_for_ship1, slime_for_ship2
 
 
 def initialize_ui_elements():
@@ -752,8 +816,8 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
-            fuel_bar1.decrease(10)  # Decrease fuel for ship1
-            fuel_bar2.decrease(10)  # Decrease fuel for ship2
+            fuel_bar1.decrease(10)
+            fuel_bar2.decrease(10)
         elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
@@ -778,6 +842,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     for fuel in list(fuels):
         if ship1 and ship1.rect.colliderect(fuel.rect):
             score_display1.update_score(score_display1.score + 20)
+
             fuel.kill()
         elif ship2 and ship2.rect.colliderect(fuel.rect):
             score_display2.update_score(score_display2.score + 20)
@@ -877,6 +942,9 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
     score_display2.update(screen)
     fuel_bar1.draw(screen)
     fuel_bar2.draw(screen)
+
+    Slimes.update()
+    Slimes.draw(screen)
 
     # Access ship1 and ship2 from the ships group
     for ship in ships:
