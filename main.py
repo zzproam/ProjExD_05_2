@@ -214,6 +214,14 @@ class Ship(pg.sprite.Sprite):
         self.image = self.images[self.current_frame]
         
         self.rect = self.image.get_rect(center=xy)
+
+        hitbox_offset = 0.45
+        self.hitbox = self.rect.inflate(
+            self.rect.width * (hitbox_offset - 1),
+            self.rect.height * (hitbox_offset - 1)
+        )
+
+
         self.speed = 10
         self.moving = False  # Indicates whether the ship is moving
         self.moving_left = False  # Indicates whether the ship is moving to the right
@@ -279,6 +287,7 @@ class Ship(pg.sprite.Sprite):
         else:
             self.images = self.idle_images
         restrict_ship_movement(self, self.ship_num)
+        self.hitbox.center = self.rect.center
         self.animate()
         screen.blit(self.image, self.rect)
 
@@ -672,11 +681,11 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
 
     # ullet and ship Collision
     for bullet in list(bullets):
-        if ship1 and bullet.rect.colliderect(ship1.rect) and bullet.ship_num != ship1.ship_num:
+        if ship1 and bullet.rect.colliderect(ship1.hitbox) and bullet.ship_num != ship1.ship_num:
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
-        elif ship2 and bullet.rect.colliderect(ship2.rect) and bullet.ship_num != ship2.ship_num:
+        elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar2.decrease(10)
@@ -684,13 +693,13 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     # lightning and ship Collision
     if ship1:
         for lightning in lightnings:
-            if ship1.rect.colliderect(lightning.rect):
+            if ship1.rect.colliderect(lightning.hitbox):
                 explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
                 hp_bar1.decrease(10)
 
     if ship2:
         for lightning in lightnings:
-            if ship2.rect.colliderect(lightning.rect):
+            if ship2.rect.colliderect(lightning.hitbox):
                 explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
                 hp_bar2.decrease(10)
 
@@ -803,6 +812,9 @@ def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s,
         elif ship.ship_num == 2 and ship.alive() and key_states[pg.K_TAB]:
             ship2_shield.update(screen)
             screen.blit(ship2_shield.image, ship2_shield.rect)
+        # Draw the rect for testing purposes
+        # Use a bright color like red and set the width to 1 or 2 pixels
+        pg.draw.rect(screen, (255, 0, 0), ship.hitbox, 1)    
     
 
 def display_end_game_result(screen, hp_bar1, hp_bar2):
@@ -834,5 +846,6 @@ if __name__ == "__main__":
     pg.quit()
     sys.exit()
     
+
 
 
