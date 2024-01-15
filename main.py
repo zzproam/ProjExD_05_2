@@ -6,9 +6,9 @@ from score import *
 from fuel import *
 import os
 import random
-import time
 from pygame.locals import *
-WIDTH, HEIGHT = 1600, 900
+import math
+WIDTH, HEIGHT = 1500, 800
 pg.display.set_caption('BattleShip')
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
@@ -23,7 +23,7 @@ move_image_paths = {
 
 
 def restrict_ship_movement(ship, ship_num):
-    # 異なる船の境界を定義する辞書
+    # 船1と船2の境界を定義する辞書
     ship_bounds = {
         1: (0, 0, WIDTH, HEIGHT),   # 船1の境界：(左、上、右、下)
         2: (0, 0, WIDTH, HEIGHT)  # 船2の境界：(左、上、右、下)
@@ -353,28 +353,27 @@ class Bullet(pg.sprite.Sprite):
     プレイヤーの軽いアタックを表すクラス。ドーナツを投げます。
     """
 
-    def __init__(self, ship: Ship, direction: str):
+    def __init__(self, shooter: Ship, target: Ship):
         super().__init__()
         # 画像を読み込み、中心の座標を設定
         self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")
-        self.rect = self.image.get_rect(center=(ship.rect.centerx,
-                                                ship.rect.top if direction == "up" else ship.rect.bottom))
+        self.rect = self.image.get_rect(center=shooter.rect.center)
         self.speed = 10  # 弾の速さ
-        self.ship_num = ship.ship_num  # 弾を発射した船を識別する属性
+        # attribute to identify the ship that fired the bullet
+        self.ship_num = shooter.ship_num
+        # 弾を発射した船を識別する属性
         # 方向に基づいて速度を設定
-        if direction == "up":
-            self.vx, self.vy = (0, -1)
-        elif direction == "down":
-            self.vx, self.vy = (0, 1)
-        else:
-            raise ValueError(
-                "弾の方向が無効です。'up' または 'down' を選択してください。")
+        dx, dy = target.rect.centerx - \
+            shooter.rect.centerx, target.rect.centery - shooter.rect.centery
+        distance = max(1, (dx**2 + dy**2)**0.5)  # Avoid division by zero
+        self.vx, self.vy = self.speed * dx / distance, self.speed * dy / distance
 
     def update(self):
         # 弾を速度に従って移動させる
-        self.rect.move_ip(self.speed * self.vx, self.speed * self.vy)
+        self.rect.x += self.vx
+        self.rect.y += self.vy
         # 弾が画面外に出たら削除
-        if self.rect.bottom < 0 or self.rect.top > HEIGHT:
+        if self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT:
             self.kill()
 
 
@@ -383,24 +382,29 @@ class Lightning(pg.sprite.Sprite):
     プレイヤーの必殺技であるライトニングを管理するクラスです。
     """
 
-    def __init__(self, ship: Ship, direction: str):
+    def __init__(self, shooter: Ship, target: Ship):
         super().__init__()
         # 画像を方向に基づいて読み込む
-        self.load_images(direction)
+
+        if shooter.rect.centery < target.rect.centery:
+            self.direction = "down"
+        else:
+            self.direction = "up"
+        # 画像を方向に基づいて読み込む
+        self.load_images()
         self.current_frame = 0
         self.image = self.images[self.current_frame]
-        self.rect = self.image.get_rect(centerx=ship.rect.centerx)
+        self.rect = self.image.get_rect(centerx=shooter.rect.centerx)
+
         # ライトニングの初期位置を設定
-        if direction == "up":
-            self.rect.bottom = ship.rect.top
-        elif direction == "down":
-            self.rect.top = ship.rect.bottom
+        if self.direction == "down":
+            self.rect.top = shooter.rect.bottom
         else:
-            raise ValueError(
-                "ライトニングの方向が無効です。'up' または 'down' を選択してください。")
+            self.rect.bottom = shooter.rect.top
+
         self.animation_done = False  # アニメーションが完了したかどうかのフラグ
 
-    def load_images(self, direction):
+    def load_images(self):
         # 画像のリストを読み込む
         imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
         self.images = []
@@ -412,7 +416,7 @@ class Lightning(pg.sprite.Sprite):
             image = pg.transform.scale(
                 image, (image.get_width() * 2, image.get_height() * 2))
             # 上向きの方向の場合、画像を反転させる
-            if direction == "up":
+            if self.direction == "up":
                 image = pg.transform.flip(image, False, True)
             self.images.append(image)
 
@@ -650,6 +654,8 @@ def main():
     birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, slime_for_ship1, slime_for_ship2 = initialize_sprites()
     hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
+    start_screen(screen, bg_img, bg_img_flipped, bg_tile_width,
+                 bg_tile_height, tiles_x, tiles_y)
     game_over = False
     clock = pg.time.Clock()
     tmr = 0
@@ -678,12 +684,66 @@ def main():
     pg.quit()
 
 
+def start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y):
+    running = True
+    bg_x = 0
+    bg_x_flipped = bg_tile_width
+    blink_timer = 0
+    show_text = True
+
+    while running:
+        bg_x -= 1
+        bg_x_flipped -= 1
+
+        bg_speed = 1  # Speed at which the background moves
+
+        bg_x -= bg_speed
+        bg_x_flipped -= bg_speed
+
+        # Reset position when the background image moves out of the screen
+        if bg_x < -bg_tile_width:
+            bg_x = bg_x_flipped + bg_tile_width
+        if bg_x_flipped < -bg_tile_width:
+            bg_x_flipped = bg_x + bg_tile_width
+
+        # Draw the scrolling background
+        for y in range(tiles_y):
+            for x in range(tiles_x):
+                screen.blit(bg_img, (bg_x, y * bg_tile_height))
+                screen.blit(bg_img_flipped, (bg_x_flipped, y * bg_tile_height))
+
+        blink_timer += 1
+        if blink_timer > 80:  # Adjust the speed of blinking here
+            blink_timer = 0
+            show_text = not show_text
+
+        if show_text:
+            font1 = pg.font.SysFont('Comic Sans MS', 30)
+            text_surf = font1.render('Click to start', True, (255, 255, 255))
+            text_rect = text_surf.get_rect(
+                center=(WIDTH // 2, HEIGHT // 2 + HEIGHT/7))
+            screen.blit(text_surf, text_rect)
+        tt_img = pg.image.load(f"{MAIN_DIR}/imgs/pygame.webp")
+        tt_img.set_colorkey((255, 255, 255))
+        tt_rect = tt_img.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(tt_img, tt_rect)
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+            if event.type == pg.MOUSEBUTTONDOWN or event.type == pg.KEYDOWN:
+                running = False  # Exit the start screen loop
+
+        pg.display.update()
+
+
 def initialize_screen():
     """
     画面の初期設定を行います。画面サイズを設定し、ウィンドウのタイトルを設定します。
     """
     screen = pg.display.set_mode((WIDTH, HEIGHT))  # Pygameの表示画面オブジェクト
     pg.display.set_caption('ケーキ泥棒')
+
     return screen
 
 
@@ -792,20 +852,22 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     """
     背景の動きを制御します。背景画像をスクロールさせることで、動いているように見せます。
     """
-    bg_x -= 1
-    bg_x_flipped -= 1
+    bg_speed = 1  # Speed at which the background moves
 
+    bg_x -= bg_speed
+    bg_x_flipped -= bg_speed
+
+    # Reset position when the background image moves out of the screen
     if bg_x < -bg_tile_width:
-        bg_x = bg_tile_width
+        bg_x = bg_x_flipped + bg_tile_width
     if bg_x_flipped < -bg_tile_width:
-        bg_x_flipped = bg_tile_width
+        bg_x_flipped = bg_x + bg_tile_width
 
+    # Draw the scrolling background
     for y in range(tiles_y):
         for x in range(tiles_x):
-            screen.blit(bg_img, (x * bg_tile_width + bg_x, y * bg_tile_height))
-            screen.blit(bg_img_flipped, (x * bg_tile_width +
-                        bg_x_flipped, y * bg_tile_height))
-
+            screen.blit(bg_img, (bg_x, y * bg_tile_height))
+            screen.blit(bg_img_flipped, (bg_x_flipped, y * bg_tile_height))
     return bg_x, bg_x_flipped
 
 
@@ -822,23 +884,21 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             pg.quit()
             sys.exit()
         elif event.type == pg.KEYDOWN:
-            # use bullet player1 : press down, player2 : press up
+            # add bullet for ship1
             if event.key == pg.K_RIGHTBRACKET:
                 if ship1:
-                    bullets.add(Bullet(ship1, "down"))
+                    bullets.add(Bullet(ship1, ship2))
+            # add bullet for ship2
             elif event.key == pg.K_g:
                 if ship2:
-                    bullets.add(Bullet(ship2, "up"))
-            # add lightning for ship1 and ship2
+                    bullets.add(Bullet(ship2, ship1))
+            # add lightning for ship1
             elif event.key == pg.K_LEFTBRACKET:
-                if fuel_bar1.fuel > 0:
-                    lightnings.add(Lightning(ship1, "down"))
-                    fuel_bar1.decrease(10)  # Decrease fuel for ship1
+                if ship1 and ship2:
+                    lightnings.add(Lightning(ship1, ship2))
             elif event.key == pg.K_h:
-                if fuel_bar2.fuel > 0:
-                    lightnings.add(Lightning(ship2, "up"))
-                    fuel_bar2.decrease(10)
-            # blinking for ship2
+                if ship1 and ship2:
+                    lightnings.add(Lightning(ship2, ship1))
             elif event.key == pg.K_LSHIFT:
                 # プレイヤー2が左シフトキーを押したとき、Blinkを開始
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
@@ -854,7 +914,7 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                         ship1_blink.start_blink(direction)
                         fuel_bar1.decrease(20)
 
-            elif event.key == pg.K_e:
+            elif event.key == pg.K_SLASH:
                 frame_count = 10
                 # Update path if necessary
                 slime_image_path = f"{MAIN_DIR}/slime1.png"
@@ -862,7 +922,7 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                 slime_for_ship1.add(new_slime)
 
         # Summon slime for ship2 when '/' is pressed
-            elif event.key == pg.K_SLASH:
+            elif event.key == pg.K_e:
                 frame_count = 10
                 # Update path if necessary
                 slime_image_path = f"{MAIN_DIR}/slime2.png"
@@ -892,8 +952,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
-            fuel_bar1.decrease(10)
-            fuel_bar2.decrease(10)
+
         elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
