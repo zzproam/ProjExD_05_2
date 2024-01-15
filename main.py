@@ -820,7 +820,7 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     return bg_x, bg_x_flipped
 
 
-def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2):
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2,slime_for_ship1, slime_for_ship2):
     """
     キーボードやマウスなどのユーザー入力イベントを処理します。
     """
@@ -1068,36 +1068,6 @@ def display_end_game_result(screen, hp_bar1, hp_bar2):
                 2, HEIGHT // 2 - text.get_height() // 2))
     pg.display.flip()  # Update the display to show the result
 
-
-def draw_game_state(screen, ships, bullets, lightnings, explosions, explosion2s, birds, fuels, hp_bar1, hp_bar2, score_display1, score_display2, ship1_shield, ship2_shield, key_states):
-    """
-    ゲームの現在の状態を画面に描画します。
-    """
-    # Draw all sprites
-    ships.draw(screen)
-    bullets.draw(screen)
-    lightnings.draw(screen)
-    explosion2s.draw(screen)
-    explosions.draw(screen)
-    birds.draw(screen)
-    fuels.draw(screen)
-    score_display1.draw(screen)
-    score_display2.draw(screen)
-
-    # Draw UI elements
-    hp_bar1.draw(screen)
-    hp_bar2.draw(screen)
-    score_display1.update(screen)
-    score_display2.update(screen)
-
-    # Access ship1 and ship2 from the ships group
-    for ship in ships:
-        if ship.ship_num == 1 and ship.alive() and key_states[pg.K_RETURN]:
-            ship1_shield.update(screen)
-            screen.blit(ship1_shield.image, ship1_shield.rect)
-        elif ship.ship_num == 2 and ship.alive() and key_states[pg.K_TAB]:
-            ship2_shield.update(screen)
-            screen.blit(ship2_shield.image, ship2_shield.rect)
     
 if __name__ == "__main__":
     pg.init()
