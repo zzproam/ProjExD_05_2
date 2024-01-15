@@ -693,13 +693,13 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
     # lightning and ship Collision
     if ship1:
         for lightning in lightnings:
-            if ship1.rect.colliderect(lightning.hitbox):
+            if ship1.hitbox.colliderect(lightning):
                 explosion2s.add(Explosion2(ship1.rect.center))  # Create an explosion at ship2's location
                 hp_bar1.decrease(10)
 
     if ship2:
         for lightning in lightnings:
-            if ship2.rect.colliderect(lightning.hitbox):
+            if ship2.hitbox.colliderect(lightning.rect):
                 explosion2s.add(Explosion2(ship2.rect.center))  # Create an explosion at ship2's location
                 hp_bar2.decrease(10)
 
