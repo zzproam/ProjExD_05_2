@@ -555,7 +555,9 @@ class FuelBar():
 
 
 class Slime(pg.sprite.Sprite):
-    def __init__(self, ship, opponent_ship, image_path, frame_count):
+    MAX_LIFETIME = 10000
+
+    def __init__(self, ship, opponent_ship, image_path, frame_count, radius=60):
         super().__init__()
         self.ship = ship
         self.opponent_ship = opponent_ship
@@ -571,6 +573,9 @@ class Slime(pg.sprite.Sprite):
         self.projectiles = pg.sprite.Group()  # Add a group to hold projectiles
         self.shoot_event = pg.USEREVENT + 1
         pg.time.set_timer(self.shoot_event, 2000)
+        self.radius = radius
+        self.set_initial_position(radius)
+        self.lifetime = 0
 
     def load_frames(self, frame_count):
         # Extract frames from the spritesheet
@@ -583,10 +588,11 @@ class Slime(pg.sprite.Sprite):
             frames.append(frame)
         return frames
 
-    def set_initial_position(self):
+    def set_initial_position(self, radius=60):
         # Position the slime randomly within a 30 unit range of the ship's position
-        offset_x = random.randint(-30, 30)
-        offset_y = random.randint(-30, 30)
+        angle = random.uniform(0, 2 * math.pi)
+        offset_x = radius * math.cos(angle)
+        offset_y = radius * math.sin(angle)
         self.rect.centerx = self.ship.rect.centerx + offset_x
         self.rect.centery = self.ship.rect.centery + offset_y
 
@@ -605,7 +611,10 @@ class Slime(pg.sprite.Sprite):
         self.projectiles.add(projectile)
 
     def update(self):
-        # Slime movement code remains unchanged
+        current_time = pg.time.get_ticks()
+        time_delta = current_time - self.last_update
+        self.last_update = current_time
+        self.lifetime += time_delta
 
         # Update the animation
         self.current_frame += self.animation_speed
@@ -615,6 +624,9 @@ class Slime(pg.sprite.Sprite):
 
         # Update projectiles
         self.projectiles.update()
+
+        if self.lifetime > self.MAX_LIFETIME:
+            self.kill()
 
     def draw(self, screen):
         # Draw the slime on the screen
@@ -915,19 +927,26 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                         fuel_bar1.decrease(20)
 
             elif event.key == pg.K_SLASH:
-                frame_count = 10
-                # Update path if necessary
-                slime_image_path = f"{MAIN_DIR}/slime1.png"
-                new_slime = Slime(ship1, ship2, slime_image_path, frame_count)
-                slime_for_ship1.add(new_slime)
+                if len(slime_for_ship1) < 3:  # Limit to max 3 slimes
+                    # Create enough slimes to make count 3
+                    for _ in range(3 - len(slime_for_ship1)):
+                        frame_count = 10
+                        slime_image_path = f"{MAIN_DIR}/slime1.png"
+                        new_slime = Slime(
+                            ship1, ship2, slime_image_path, frame_count)
+                        new_slime.last_update = pg.time.get_ticks()
+                        slime_for_ship1.add(new_slime)
 
-        # Summon slime for ship2 when '/' is pressed
+        # Summon slimes for ship2
             elif event.key == pg.K_e:
-                frame_count = 10
-                # Update path if necessary
-                slime_image_path = f"{MAIN_DIR}/slime2.png"
-                new_slime = Slime(ship2, ship1, slime_image_path, frame_count)
-                slime_for_ship2.add(new_slime)
+                if len(slime_for_ship2) < 3:
+                    for _ in range(3 - len(slime_for_ship2)):
+                        frame_count = 10
+                        slime_image_path = f"{MAIN_DIR}/slime2.png"
+                        new_slime = Slime(
+                            ship2, ship1, slime_image_path, frame_count)
+                        new_slime.last_update = pg.time.get_ticks()
+                        slime_for_ship2.add(new_slime)
         if event.type == pg.USEREVENT + 1:
             # Trigger slime shooting
             for slime in slime_for_ship1:
