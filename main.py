@@ -910,11 +910,12 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
                     if ship1 and ship2:
                         lightnings.add(Lightning(ship1, ship2))
                         fuel_bar1.decrease(10)
+
             elif event.key == pg.K_h:
                 if fuel_bar2.fuel > 0:
                     if ship1 and ship2:
                         lightnings.add(Lightning(ship2, ship1))
-                        fuel_bar1.decrease(10)
+                        fuel_bar2.decrease(10)
             elif event.key == pg.K_LSHIFT:
                 # プレイヤー2が左シフトキーを押したとき、Blinkを開始
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
@@ -987,13 +988,14 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             if ship1.hitbox.colliderect(lightning):
                 # Create an explosion at ship2's location
                 explosion2s.add(Explosion2(ship1.rect.center))
-                
+                hp_bar1.decrease(10)
+
     if ship2:
         for lightning in lightnings:
             if ship2.hitbox.colliderect(lightning.rect):
                 # Create an explosion at ship2's location
                 explosion2s.add(Explosion2(ship2.rect.center))
-                
+                hp_bar2.decrease(10)
 
     # Check for fuel collection and update scores
  # 燃料の取得とスコアの更新
