@@ -742,7 +742,7 @@ def start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, 
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
-            if event.type == pg.MOUSEBUTTONDOWN or event.type == pg.KEYDOWN:
+            if event.type == pg.MOUSEBUTTONDOWN:
                 running = False  # Exit the start screen loop
 
         pg.display.update()
