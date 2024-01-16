@@ -40,10 +40,11 @@ def restrict_ship_movement(ship, ship_num):
     ship.rect.bottom = min(max_y, max(ship.rect.bottom, min_y))
 
 
-class Explosion(pg.sprite.Sprite): 
+class Explosion(pg.sprite.Sprite):
     """
     キャラクターが死んだ時に爆発アニメーションを起動する
     """
+
     def __init__(self, center, size=(100, 100)):
         super().__init__()
         # 爆発画像のリストを初期化
@@ -61,16 +62,16 @@ class Explosion(pg.sprite.Sprite):
         # アニメーションの速度を設定
         self.animation_speed = 1
         # アニメーションの総フレーム数を設定
-        self.total_frames = 10 * 5  
+        self.total_frames = 10 * 5
 
     def load_images(self):
         # 爆発画像を読み込む
-        for i in range(1, 11):  
+        for i in range(1, 11):
             # 各爆発画像を読み込む
             img = pg.image.load(
                 f'{MAIN_DIR}/fig/Explosion_{i}.png').convert_alpha()
             # 画像のサイズを調整
-            img = pg.transform.scale(img, (100, 100))  
+            img = pg.transform.scale(img, (100, 100))
             # 画像をリストに追加
             self.images.append(img)
 
@@ -85,10 +86,14 @@ class Explosion(pg.sprite.Sprite):
             self.frame_count += 1
         else:
             # アニメーションが終了したら、スプライトを削除
-            self.kill()  
+            self.kill()
 
 
 class Blink(pg.sprite.Sprite):
+    """
+    プレイヤーの能力である瞬間移動を管理するクラスです。
+    """
+
     def __init__(self, ship: Ship, image_path, frame_count):
         super().__init__()
         self.ship = ship
@@ -97,7 +102,7 @@ class Blink(pg.sprite.Sprite):
         self.frames = self.load_frames(self.frame_count)
         self.current_frame = 0
         self.animation_speed = 1
-        self.active = False  # Indicates if the blink is active
+        self.active = False  # 瞬間移動がアクティブかどうかを示すフラグ
 
     def animate(self):
         if self.active:
@@ -107,27 +112,21 @@ class Blink(pg.sprite.Sprite):
             self.image = self.frames[int(self.current_frame)]
             self.rect = self.image.get_rect(center=self.ship.rect.center)
 
-    def start_blink(self, direction, score_display):
-        if score_display.score >= 20:
-            self.active = True
-            self.ship.blinking = True  # Tell the ship it's blinking
-            score_display.update_score(score_display.score - 20)
-        else:
-            print("not enough fuel to blink!")
-
+    def start_blink(self, direction):
+        self.active = True
+        self.ship.blinking = True  # シップに点滅中であることを知らせる
         self.ship.blink_direction = direction
-        self.current_frame = 0  # Reset animation frame
-
-        # Flip the animation frames if the blink direction is to the left
+        self.current_frame = 0  # アニメーションフレームをリセット
+        # 瞬間移動の方向が左の場合、アニメーションフレームを反転させる
         self.frames = [pg.transform.flip(
             frame, True, False) if direction[0] < 0 else frame for frame in self.original_frames]
 
     def stop_blink(self):
         self.active = False
-        self.ship.blinking = False  # Tell the ship it's done blinking
+        self.ship.blinking = False  # シップに点滅が終わったことを知らせる
 
     def load_frames(self, frame_count):
-        # Split the spritesheet into frames and resize if new_size is provided.
+        # スプライトシートをフレームに分割し、new_sizeが指定されていればリサイズします。
         frames = []
         frame_width = self.spritesheet.get_width() // frame_count
         frame_height = self.spritesheet.get_height()
@@ -136,17 +135,17 @@ class Blink(pg.sprite.Sprite):
                 (i * frame_width, 0, frame_width, frame_height))
             frame = pg.transform.rotozoom(frame, 225, 1.0)
             frames.append(frame)
-        # Store the original frames for flipping
+        # 反転用に元のフレームを保存
         self.original_frames = list(frames)
         return frames
 
     def update(self, screen: pg.Surface):
         self.animate()
         if self.active:
-            # Position the animation on the edge of the ship's rect based on direction
-            if self.ship.blink_direction[0] > 0:  # If moving left
+            # アニメーションをシップのrectの端に配置します（方向に基づいて）
+            if self.ship.blink_direction[0] > 0:  # 左に移動している場合
                 self.rect.right = self.ship.rect.left
-            else:  # If moving right
+            else:  # 右に移動している場合
                 self.rect.left = self.ship.rect.right
             screen.blit(self.image, self.rect)
 
@@ -203,36 +202,36 @@ class Bird(pg.sprite.Sprite):
 
 
 class Ship(pg.sprite.Sprite):
+    """
+    プレイヤーのキャラクターを管理するクラスです。
+    """
+
     def __init__(self, num: int, xy: tuple[int, int], idle_frames, move_frames, ship_num, new_size):
         super().__init__()
+        # アイドルと移動の画像を読み込む
         self.idle_images = self.load_images(
             f"{MAIN_DIR}/fig/Idle{num}.png", idle_frames, new_size)
         self.move_images = self.load_images(
             f"{MAIN_DIR}/fig/Move{num}.png", move_frames, new_size)
-        self.images = self.idle_images  # Start with idle images
+        self.images = self.idle_images  # 最初はアイドル画像から開始
         self.current_frame = 0
         self.animation_speed = 0.2
         self.image = self.images[self.current_frame]
         self.rect = self.image.get_rect(center=xy)
-
+        # ヒットボックスのオフセットとサイズを設定
         hitbox_offset = 0.45
         self.hitbox = self.rect.inflate(
             self.rect.width * (hitbox_offset - 1),
             self.rect.height * (hitbox_offset - 1)
         )
-
         self.speed = 10
-        self.moving = False  # Indicates whether the ship is moving
-        self.moving_left = False  # Indicates whether the ship is moving to the right
-
+        self.moving = False  # シップが移動しているかどうかを示す
+        self.moving_left = False  # シップが左に移動しているかどうかを示す
         self.blinking = False
-        self.blink_distance = 500  # Updated blink distance
-        self.blink_direction = (1, 0)  # Default blink direction to the right
-
+        self.blink_distance = 500  # 更新された点滅距離
+        self.blink_direction = (1, 0)  # デフォルトの点滅方向は右
         self.last_direction = (+1, 0)
-
-        self.blink_speed = 20  # How fast the ship blinks per frame
-
+        self.blink_speed = 20  # シップが1フレームあたりに点滅する速さ
         self.ship_num = ship_num
 
     def load_images(self, image_path, frame_count, new_size=None):
@@ -249,6 +248,7 @@ class Ship(pg.sprite.Sprite):
         return images
 
     def animate(self):
+        # アニメーションの更新
         self.current_frame += self.animation_speed
         if self.current_frame >= len(self.images):
             self.current_frame = 0
@@ -257,30 +257,30 @@ class Ship(pg.sprite.Sprite):
             self.image = pg.transform.flip(self.image, True, False)
 
     def update(self, key_lst: list[bool], ctrl_keys: dict, screen: pg.Surface):
-        self.moving = False  # Reset moving state
+        self.moving = False  # 移動状態をリセット
         sum_mv = [0, 0]
         if not self.blinking:
             for k, mv in ctrl_keys.items():
                 if key_lst[k]:
+                    # 移動キーが押されていれば、シップを移動させる
                     self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
                     sum_mv[0] += mv[0]
                     sum_mv[1] += mv[1]
                     self.moving = True
                     self.moving_left = mv[0] < 0
                 if sum_mv != [0, 0]:
-                    # Update the last direction when moving
+                    # 移動中の場合は最後の移動方向を更新
                     self.last_direction = (sum_mv[0], sum_mv[1])
         else:
-            # Blinking movement code
+            # 点滅中の移動コード
             self.rect.x += self.blink_direction[0] * self.blink_speed
             self.blink_distance -= self.blink_speed
             if self.blink_distance <= 0:
                 self.blinking = False
-                self.blink_distance = 500  # Reset blink distance
-                self.blink_direction = (1, 0)  # Reset blink direction
-                # Trigger the stop_blink method of the Blink instance
+                self.blink_distance = 500  # 点滅距離をリセット
+                self.blink_direction = (1, 0)  # 点滅方向をリセット
+                # Blinkインスタンスのstop_blinkメソッドをトリガーする
                 self.blink_instance.stop_blink()
-
         if self.moving:
             self.images = self.move_images
         else:
@@ -292,15 +292,19 @@ class Ship(pg.sprite.Sprite):
 
 
 class Shield(pg.sprite.Sprite):
+    """
+    プレイヤーをbulletやlightningの攻撃から守るシールドを表すクラスです。
+    """
+
     def __init__(self, ship: Ship, image_path=None, frame_count=0, new_size=None, radius=75, color=(0, 0, 255), width=2):
         super().__init__()
-        self.ship = ship
-        self.radius = radius
-        self.color = color
-        self.width = width
+        self.ship = ship  # シールドを所有するプレイヤーシップ
+        self.radius = radius  # シールドの半径
+        self.color = color  # シールドの色
+        self.width = width  # シールドの線の太さ
         self.is_animated = image_path is not None and frame_count > 0
-
         if self.is_animated:
+            # アニメーション用のスプライトシートを読み込む
             self.spritesheet = pg.image.load(image_path).convert_alpha()
             self.frame_count = frame_count
             self.frames = self.load_frames(frame_count, new_size)
@@ -316,6 +320,7 @@ class Shield(pg.sprite.Sprite):
         frames = []
         frame_width = self.spritesheet.get_width() // frame_count
         frame_height = self.spritesheet.get_height()
+        # スプライトシートからフレームをロードしてリサイズ
         for i in range(frame_count):
             frame = self.spritesheet.subsurface(
                 (i * frame_width, 0, frame_width, frame_height))
@@ -325,6 +330,7 @@ class Shield(pg.sprite.Sprite):
         return frames
 
     def animate(self):
+        # アニメーションの更新
         self.current_frame += self.animation_speed
         if self.current_frame >= len(self.frames):
             self.current_frame = 0
@@ -332,127 +338,158 @@ class Shield(pg.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.ship.rect.center)
 
     def update(self, screen: pg.Surface):
+        # シールドの表示を更新
         if self.is_animated:
             self.animate()
             screen.blit(self.image, self.rect)
         else:
-            pg.draw.circle(screen, self.color, self.ship.rect.center, self.radius, self.width)
+            # 静止画の場合は円でシールドを描画
+            pg.draw.circle(screen, self.color,
+                           self.ship.rect.center, self.radius, self.width)
 
 
 class Bullet(pg.sprite.Sprite):
+    """
+    プレイヤーの軽いアタックを表すクラス。ドーナツを投げます。
+    """
+
     def __init__(self, shooter: Ship, target: Ship):
         super().__init__()
+        # 画像を読み込み、中心の座標を設定
         self.image = pg.image.load(f"{MAIN_DIR}/fig/6.png")
         self.rect = self.image.get_rect(center=shooter.rect.center)
-        self.speed = 10
-
-        self.ship_num = shooter.ship_num  # attribute to identify the ship that fired the bullet
-
-        dx, dy = target.rect.centerx - shooter.rect.centerx, target.rect.centery - shooter.rect.centery
+        self.speed = 10  # 弾の速さ
+        # attribute to identify the ship that fired the bullet
+        self.ship_num = shooter.ship_num
+        # 弾を発射した船を識別する属性
+        # 方向に基づいて速度を設定
+        dx, dy = target.rect.centerx - \
+            shooter.rect.centerx, target.rect.centery - shooter.rect.centery
         distance = max(1, (dx**2 + dy**2)**0.5)  # Avoid division by zero
         self.vx, self.vy = self.speed * dx / distance, self.speed * dy / distance
 
     def update(self):
+        # 弾を速度に従って移動させる
         self.rect.x += self.vx
         self.rect.y += self.vy
-        # Remove bullet if it goes off-screen
+        # 弾が画面外に出たら削除
         if self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT:
             self.kill()
 
 
 class Lightning(pg.sprite.Sprite):
+    """
+    プレイヤーの必殺技であるライトニングを管理するクラスです。
+    """
+
     def __init__(self, shooter: Ship, target: Ship):
         super().__init__()
-        # Determine the direction of the lightning
+        # 画像を方向に基づいて読み込む
+
         if shooter.rect.centery < target.rect.centery:
             self.direction = "down"
         else:
             self.direction = "up"
-
-        self.load_images()  # Load images based on direction
+        # 画像を方向に基づいて読み込む
+        self.load_images()
         self.current_frame = 0
         self.image = self.images[self.current_frame]
         self.rect = self.image.get_rect(centerx=shooter.rect.centerx)
 
-        # Set the initial position of the lightning
+        # ライトニングの初期位置を設定
         if self.direction == "down":
             self.rect.top = shooter.rect.bottom
         else:
             self.rect.bottom = shooter.rect.top
 
-        self.animation_done = False
+        self.animation_done = False  # アニメーションが完了したかどうかのフラグ
 
     def load_images(self):
-        # Load and potentially flip images based on direction
+        # 画像のリストを読み込む
         imgs = sorted([img for img in os.listdir(f"{MAIN_DIR}/Lightning")])
         self.images = []
-
         for img in imgs:
-            image = pg.image.load(os.path.join(f"{MAIN_DIR}/Lightning", img)).convert_alpha()
-            image = pg.transform.scale(image, (image.get_width() * 2, image.get_height() * 2))
-
-            # Flip the image for upward direction
+            # 画像を透過可能なアルファチャンネル付きで読み込む
+            image = pg.image.load(os.path.join(
+                f"{MAIN_DIR}/Lightning", img)).convert_alpha()
+            # 画像を2倍のサイズに拡大
+            image = pg.transform.scale(
+                image, (image.get_width() * 2, image.get_height() * 2))
+            # 上向きの方向の場合、画像を反転させる
             if self.direction == "up":
                 image = pg.transform.flip(image, False, True)
-
             self.images.append(image)
 
     def update(self):
+        # フレームを更新
         self.current_frame = (self.current_frame + 1) % len(self.images)
         self.image = self.images[self.current_frame]
+        # アニメーションが最初のフレームに戻ったらアニメーションを終了する
         if self.current_frame == 0:
             self.animation_done = True
 
 
-
-
 class Explosion2(pg.sprite.Sprite):
+    """
+    爆発2のアニメーションを管理するクラスです。lightningとplayerが衝突する時の爆発アニメーションです。
+    """
+
     def __init__(self, position):
         super().__init__()
         self.images = [pg.transform.rotozoom(pg.image.load(
             f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png"),0,0.5) for frame in range(1, 11)]
         self.current_frame = 0
-        self.image = self.images[self.current_frame]  # Set the initial image
+        self.image = self.images[self.current_frame]  # 最初の画像を設定
         self.rect = self.image.get_rect(center=position)
-        self.animation_done = False
+        self.animation_done = False  # アニメーションが完了したかどうかのフラグ
 
     def update(self):
-        # Update the frame
+        # フレームを更新
         self.current_frame += 1
+        # すべてのフレームが表示されたらアニメーションを終了
         if self.current_frame < len(self.images):
             self.image = self.images[self.current_frame]
         else:
-            self.animation_done = True  # End the animation once all frames have been shown
+            self.animation_done = True  # すべてのフレームが表示されたらアニメーションを終了する
 
-            
+
 class HealthBar():
+    """
+    プレイヤーのヘルスバーを管理するクラスです。
+    """
+
     def __init__(self, x, y, width, max_hp):
+        # 初期化メソッド
         self.x = x
         self.y = y
         self.width = width
-        self.max_hp = max_hp  # Set the maximum health to 100
+        self.max_hp = max_hp  # 最大ヘルスを100に設定
         self.hp = max_hp
-        self.mark = self.width / self.max_hp  # Calculate the width of each health point
-
+        self.mark = self.width / self.max_hp  # 各ヘルスポイントの幅を計算
+        # フォントとラベルの設定
         self.font = pg.font.Font(None, 32)
         self.label = self.font.render("HP", True, (255, 255, 255))
+        # バーと値の矩形の初期化
         self.frame = pg.Rect(self.x + 2 + self.label.get_width(),
                              self.y, self.width, self.label.get_height())
         self.bar = pg.Rect(self.x + 4 + self.label.get_width(),
                            self.y + 2, self.width - 4, self.label.get_height() - 4)
         self.value = pg.Rect(self.x + 4 + self.label.get_width(),
                              self.y + 2, self.width - 4, self.label.get_height() - 4)
-        self.effect_color = (0, 255, 0)  # Green color for the health bar
+        # エフェクトカラーの設定（ヘルスバーの色）
+        self.effect_color = (0, 255, 0)  # ヘルスバーの色を緑に設定
 
     def decrease(self, amount):
+        # ヘルスを指定された量だけ減少させ、バーの幅を更新
         self.hp = max(self.hp - amount, 0)
-        self.value.width = self.mark * self.hp  # Update the width of the health bar
+        self.value.width = self.mark * self.hp
 
     def update(self):
-        # Additional logic (if any) for updating the health bar
+        # ヘルスバーを更新するための追加のロジック（あれば）
         pass
 
     def draw(self, screen):
+        # ヘルスバーを描画
         pg.draw.rect(screen, (255, 255, 255), self.frame)
         pg.draw.rect(screen, (0, 0, 0), self.bar)
         pg.draw.rect(screen, self.effect_color, self.value)
@@ -460,6 +497,10 @@ class HealthBar():
 
 
 class Fuel(pg.sprite.Sprite):
+    """
+    燃料のクラスです。playerが燃料を取ると、燃料の補充になるます。
+    """
+
     def __init__(self):
         super().__init__()
         self.image = pg.transform.rotozoom(
@@ -469,14 +510,19 @@ class Fuel(pg.sprite.Sprite):
 
 
 class FuelBar():
+    """
+    燃料の状態を表すクラスです。燃料がないと、さまざまな機能ができなくなります。
+    """
+
     def __init__(self, x, y, width, max_fuel):
+        # バーの位置とサイズの初期化
         self.x = x
         self.y = y
         self.width = width
-        self.max_fuel = max_fuel  # Set the maximum fuel
+        self.max_fuel = max_fuel
         self.fuel = max_fuel
-        self.mark = self.width / self.max_fuel  # Calculate the width of each fuel unit
-
+        self.mark = self.width / self.max_fuel
+        # テキストやバーのデザイン関連の初期化
         self.font = pg.font.Font(None, 32)
         self.label = self.font.render("Fuel", True, (255, 255, 255))
         self.frame = pg.Rect(self.x + 2 + self.label.get_width(),
@@ -485,29 +531,32 @@ class FuelBar():
                            self.y + 2, self.width - 4, self.label.get_height() - 4)
         self.value = pg.Rect(self.x + 4 + self.label.get_width(),
                              self.y + 2, self.width - 4, self.label.get_height() - 4)
-        self.effect_color = (255, 255, 0)  # Yellow color for the fuel bar
+        self.effect_color = (255, 255, 0)
 
     def decrease(self, amount):
+        # 燃料を減少させ、バーの幅を更新
         self.fuel = max(self.fuel - amount, 0)
-        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
+        self.value.width = self.mark * self.fuel
 
     def increase(self, amount):
+        # 燃料を増加させ、バーの幅を更新
         self.fuel = min(self.fuel + amount, self.max_fuel)
-        self.value.width = self.mark * self.fuel  # Update the width of the fuel bar
-
-    def update(self):
-        # Additional logic (if any) for updating the fuel bar
-        pass
+        self.value.width = self.mark * self.fuel
 
     def draw(self, screen):
+        # バーを描画
         pg.draw.rect(screen, (255, 255, 255), self.frame)
         pg.draw.rect(screen, (0, 0, 0), self.bar)
         pg.draw.rect(screen, self.effect_color, self.value)
+
+        # テキストを描画
         screen.blit(self.label, (self.x, self.y))
 
 
 class Slime(pg.sprite.Sprite):
-    def __init__(self, ship, opponent_ship, image_path, frame_count):
+    MAX_LIFETIME = 10000
+
+    def __init__(self, ship, opponent_ship, image_path, frame_count, radius=60):
         super().__init__()
         self.ship = ship
         self.opponent_ship = opponent_ship
@@ -523,6 +572,9 @@ class Slime(pg.sprite.Sprite):
         self.projectiles = pg.sprite.Group()  # Add a group to hold projectiles
         self.shoot_event = pg.USEREVENT + 1
         pg.time.set_timer(self.shoot_event, 2000)
+        self.radius = radius
+        self.set_initial_position(radius)
+        self.lifetime = 0
 
     def load_frames(self, frame_count):
         # Extract frames from the spritesheet
@@ -535,10 +587,11 @@ class Slime(pg.sprite.Sprite):
             frames.append(frame)
         return frames
 
-    def set_initial_position(self):
+    def set_initial_position(self, radius=60):
         # Position the slime randomly within a 30 unit range of the ship's position
-        offset_x = random.randint(-30, 30)
-        offset_y = random.randint(-30, 30)
+        angle = random.uniform(0, 2 * math.pi)
+        offset_x = radius * math.cos(angle)
+        offset_y = radius * math.sin(angle)
         self.rect.centerx = self.ship.rect.centerx + offset_x
         self.rect.centery = self.ship.rect.centery + offset_y
 
@@ -557,7 +610,10 @@ class Slime(pg.sprite.Sprite):
         self.projectiles.add(projectile)
 
     def update(self):
-        # Slime movement code remains unchanged
+        current_time = pg.time.get_ticks()
+        time_delta = current_time - self.last_update
+        self.last_update = current_time
+        self.lifetime += time_delta
 
         # Update the animation
         self.current_frame += self.animation_speed
@@ -567,6 +623,9 @@ class Slime(pg.sprite.Sprite):
 
         # Update projectiles
         self.projectiles.update()
+
+        if self.lifetime > self.MAX_LIFETIME:
+            self.kill()
 
     def draw(self, screen):
         # Draw the slime on the screen
@@ -606,7 +665,8 @@ def main():
     birds, ships, bullets, lightnings, explosions, explosion2s, fuels, ship1, ship2, ship1_blink, ship2_blink, ship1_shield, ship2_shield, slime_for_ship1, slime_for_ship2 = initialize_sprites()
     hp_bar1, hp_bar2, fuel_bar1, fuel_bar2 = initialize_ui_elements()
     bg_img, bg_img_flipped, bg_x, bg_x_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y = initialize_background()
-    start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y)
+    start_screen(screen, bg_img, bg_img_flipped, bg_tile_width,
+                 bg_tile_height, tiles_x, tiles_y)
     game_over = False
     clock = pg.time.Clock()
     tmr = 0
@@ -627,7 +687,6 @@ def main():
             display_end_game_result(screen, hp_bar1, hp_bar2)
             break
 
-
         pg.display.update()
         tmr += 1
         clock.tick(50)
@@ -635,13 +694,14 @@ def main():
     pg.time.delay(3000)
     pg.quit()
 
+
 def start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, tiles_x, tiles_y):
     running = True
     bg_x = 0
     bg_x_flipped = bg_tile_width
     blink_timer = 0
     show_text = True
-    
+
     while running:
         bg_x -= 1
         bg_x_flipped -= 1
@@ -667,11 +727,12 @@ def start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, 
         if blink_timer > 80:  # Adjust the speed of blinking here
             blink_timer = 0
             show_text = not show_text
-        
+
         if show_text:
             font1 = pg.font.SysFont('Comic Sans MS', 30)
-            text_surf = font1.render('Click to start', True, (255,255,255))
-            text_rect = text_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2 + HEIGHT/7))
+            text_surf = font1.render('Click to start', True, (255, 255, 255))
+            text_rect = text_surf.get_rect(
+                center=(WIDTH // 2, HEIGHT // 2 + HEIGHT/7))
             screen.blit(text_surf, text_rect)
         tt_img = pg.image.load(f"{MAIN_DIR}/imgs/pygame.webp")
         tt_img.set_colorkey((255, 255, 255))
@@ -685,6 +746,7 @@ def start_screen(screen, bg_img, bg_img_flipped, bg_tile_width, bg_tile_height, 
                 running = False  # Exit the start screen loop
 
         pg.display.update()
+
 
 def initialize_screen():
     """
@@ -820,7 +882,7 @@ def handle_background_movement(bg_x, bg_x_flipped, bg_tile_width, bg_tile_height
     return bg_x, bg_x_flipped
 
 
-def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, score_display1, score_display2,slime_for_ship1, slime_for_ship2):
+def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, ship2_blink, fuel_bar1, fuel_bar2, slime_for_ship1, slime_for_ship2):
     """
     キーボードやマウスなどのユーザー入力イベントを処理します。
     """
@@ -836,41 +898,59 @@ def handle_events(events, key_states, ships, bullets, lightnings, ship1_blink, s
             # add bullet for ship1
             if event.key == pg.K_RIGHTBRACKET:
                 if ship1:
-                    bullets.add(Bullet(ship1, ship2)) 
+                    bullets.add(Bullet(ship1, ship2))
             # add bullet for ship2
             elif event.key == pg.K_g:
                 if ship2:
                     bullets.add(Bullet(ship2, ship1))
-            # add lightning for ship1         
+            # add lightning for ship1
             elif event.key == pg.K_LEFTBRACKET:
-                if ship1 and ship2:
-                    lightnings.add(Lightning(ship1, ship2))
+                if fuel_bar1.fuel > 0:
+                    if ship1 and ship2:
+                        lightnings.add(Lightning(ship1, ship2))
+                        fuel_bar1.decrease(10)
+
             elif event.key == pg.K_h:
-                if ship1 and ship2:
-                    lightnings.add(Lightning(ship2, ship1))
+                if fuel_bar2.fuel > 0:
+                    if ship1 and ship2:
+                        lightnings.add(Lightning(ship2, ship1))
+                        fuel_bar2.decrease(10)
             elif event.key == pg.K_LSHIFT:
+                # プレイヤー2が左シフトキーを押したとき、Blinkを開始
                 direction = (-1, 0) if key_states[pg.K_a] else (1, 0)
                 if not ship2.blinking:
-                    ship2_blink.start_blink(direction, score_display2)
+                    if fuel_bar2.fuel > 0:
+                        ship2_blink.start_blink(direction)
+                        fuel_bar2.decrease(30)
             elif event.key == pg.K_RSHIFT:
+                # プレイヤー1が右シフトキーを押したとき、Blinkを開始
                 direction = (-1, 0) if key_states[pg.K_LEFT] else (1, 0)
                 if not ship1.blinking:
-                    ship1_blink.start_blink(direction, score_display1)
+                    if fuel_bar1.fuel > 0:
+                        ship1_blink.start_blink(direction)
+                        fuel_bar1.decrease(20)
 
-            elif event.key == pg.K_e:
-                frame_count = 10
-                # Update path if necessary
-                slime_image_path = f"{MAIN_DIR}/slime1.png"
-                new_slime = Slime(ship1, ship2, slime_image_path, frame_count)
-                slime_for_ship1.add(new_slime)
-
-        # Summon slime for ship2 when '/' is pressed
             elif event.key == pg.K_SLASH:
-                frame_count = 10
-                # Update path if necessary
-                slime_image_path = f"{MAIN_DIR}/slime2.png"
-                new_slime = Slime(ship2, ship1, slime_image_path, frame_count)
-                slime_for_ship2.add(new_slime)
+                if len(slime_for_ship1) < 3:  # Limit to max 3 slimes
+                    # Create enough slimes to make count 3
+                    for _ in range(3 - len(slime_for_ship1)):
+                        frame_count = 10
+                        slime_image_path = f"{MAIN_DIR}/slime1.png"
+                        new_slime = Slime(
+                            ship1, ship2, slime_image_path, frame_count)
+                        new_slime.last_update = pg.time.get_ticks()
+                        slime_for_ship1.add(new_slime)
+
+        # Summon slimes for ship2
+            elif event.key == pg.K_e:
+                if len(slime_for_ship2) < 3:
+                    for _ in range(3 - len(slime_for_ship2)):
+                        frame_count = 10
+                        slime_image_path = f"{MAIN_DIR}/slime2.png"
+                        new_slime = Slime(
+                            ship2, ship1, slime_image_path, frame_count)
+                        new_slime.last_update = pg.time.get_ticks()
+                        slime_for_ship2.add(new_slime)
         if event.type == pg.USEREVENT + 1:
             # Trigger slime shooting
             for slime in slime_for_ship1:
@@ -895,8 +975,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
             explosions.add(Explosion(ship1.rect.center, size=(100, 100)))
             bullets.remove(bullet)
             hp_bar1.decrease(10)
-            fuel_bar1.decrease(10)
-            fuel_bar2.decrease(10)
+
         elif ship2 and bullet.rect.colliderect(ship2.hitbox) and bullet.ship_num != ship2.ship_num:
             explosions.add(Explosion(ship2.rect.center, size=(100, 100)))
             bullets.remove(bullet)
@@ -909,6 +988,7 @@ def handle_collisions(ships, bullets, lightnings, explosion2s, explosions, fuels
                 # Create an explosion at ship2's location
                 explosion2s.add(Explosion2(ship1.rect.center))
                 hp_bar1.decrease(10)
+
     if ship2:
         for lightning in lightnings:
             if ship2.hitbox.colliderect(lightning.rect):
@@ -1068,7 +1148,7 @@ def display_end_game_result(screen, hp_bar1, hp_bar2):
                 2, HEIGHT // 2 - text.get_height() // 2))
     pg.display.flip()  # Update the display to show the result
 
-    
+
 if __name__ == "__main__":
     pg.init()
     main()
