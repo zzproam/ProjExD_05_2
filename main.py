@@ -409,8 +409,8 @@ class Lightning(pg.sprite.Sprite):
 class Explosion2(pg.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
-        self.images = [pg.image.load(
-            f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png") for frame in range(1, 11)]
+        self.images = [pg.transform.rotozoom(pg.image.load(
+            f"{MAIN_DIR}/Explosion_two_colors/Explosion_two_colors{frame}.png"),0,0.5) for frame in range(1, 11)]
         self.current_frame = 0
         self.image = self.images[self.current_frame]  # Set the initial image
         self.rect = self.image.get_rect(center=position)
